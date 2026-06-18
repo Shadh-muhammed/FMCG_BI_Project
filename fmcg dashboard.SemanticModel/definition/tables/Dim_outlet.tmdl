@@ -1,0 +1,106 @@
+table Dim_outlet
+	lineageTag: 70e24d74-b309-4508-83a8-754d5f1c4bf3
+
+	column outlet_id
+		dataType: string
+		lineageTag: da19807f-7ff1-4821-8292-283fd166bdf6
+		summarizeBy: none
+		sourceColumn: outlet_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column outlet_name
+		dataType: string
+		lineageTag: 1ee225dc-77d8-4555-8658-96b0a0e53134
+		summarizeBy: none
+		sourceColumn: outlet_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column region
+		dataType: string
+		lineageTag: 864dc5c8-d41e-4f3d-ac4e-0c32ae1d1954
+		summarizeBy: none
+		sourceColumn: region
+
+		annotation SummarizationSetBy = Automatic
+
+	column channel
+		dataType: string
+		lineageTag: e1a43db4-0339-4d50-8891-9bac330c6576
+		summarizeBy: none
+		sourceColumn: channel
+
+		annotation SummarizationSetBy = Automatic
+
+	column distributor_name
+		dataType: string
+		lineageTag: f132fd2f-481c-4e5d-87ca-5a27a0bcf3f0
+		summarizeBy: none
+		sourceColumn: distributor_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column beat_number
+		dataType: string
+		lineageTag: a43a0da5-1d05-4b8b-85c0-465a826dcaa2
+		summarizeBy: none
+		sourceColumn: beat_number
+
+		annotation SummarizationSetBy = Automatic
+
+	column outlet_size
+		dataType: string
+		lineageTag: 442defb2-7b3a-41f9-8fe6-954adb84be1a
+		summarizeBy: none
+		sourceColumn: outlet_size
+
+		annotation SummarizationSetBy = Automatic
+
+	column active_flag
+		dataType: string
+		lineageTag: 954e8928-bf7a-4f4e-b757-49c4dbed1386
+		summarizeBy: none
+		sourceColumn: active_flag
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Dim_region.region_id'
+		dataType: string
+		lineageTag: 9b437b85-4581-4835-8d55-8bf4b360e7d9
+		summarizeBy: none
+		sourceColumn: Dim_region.region_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Dim_channel.channel_id'
+		dataType: string
+		lineageTag: 2547a64d-1db6-4d61-9472-7b0bf54bb357
+		summarizeBy: none
+		sourceColumn: Dim_channel.channel_id
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Dim_outlet = m
+		mode: import
+		source =
+				let
+				    Source = Excel.Workbook(File.Contents("D:\fmcg project\data\FMCG_2022_2024.xlsx"), null, true),
+				    Dim_outlet_Sheet = Source{[Item="Dim_outlet",Kind="Sheet"]}[Data],
+				    #"Changed Type" = Table.TransformColumnTypes(Dim_outlet_Sheet,{{"Column1", type text}, {"Column2", type text}, {"Column3", type text}, {"Column4", type text}, {"Column5", type text}, {"Column6", type text}, {"Column7", type text}, {"Column8", type text}}),
+				    #"Promoted Headers" = Table.PromoteHeaders(#"Changed Type", [PromoteAllScalars=true]),
+				    #"Changed Type1" = Table.TransformColumnTypes(#"Promoted Headers",{{"outlet_id", type text}, {"outlet_name", type text}, {"region", type text}, {"channel", type text}, {"distributor_name", type text}, {"beat_number", type text}, {"outlet_size", type text}, {"active_flag", type text}}),
+				    #"Added Prefix" = Table.TransformColumns(#"Changed Type1", {{"region", each "PL-" & _, type text}}),
+				    #"Merged Queries" = Table.NestedJoin(#"Added Prefix", {"region"}, Dim_region, {"region"}, "Dim_region", JoinKind.LeftOuter),
+				    #"Expanded Dim_region" = Table.ExpandTableColumn(#"Merged Queries", "Dim_region", {"region_id"}, {"Dim_region.region_id"}),
+				    #"Replaced Value" = Table.ReplaceValue(#"Expanded Dim_region","Wholesale","Discount",Replacer.ReplaceText,{"channel"}),
+				    #"Replaced Value1" = Table.ReplaceValue(#"Replaced Value","Online","E-commerce",Replacer.ReplaceText,{"channel"}),
+				    #"Merged Queries1" = Table.NestedJoin(#"Replaced Value1", {"channel"}, Dim_channel, {"channel"}, "Dim_channel", JoinKind.LeftOuter),
+				    #"Expanded Dim_channel" = Table.ExpandTableColumn(#"Merged Queries1", "Dim_channel", {"channel_id"}, {"Dim_channel.channel_id"})
+				in
+				    #"Expanded Dim_channel"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

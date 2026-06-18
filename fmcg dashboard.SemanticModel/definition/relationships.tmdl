@@ -1,0 +1,56 @@
+relationship 9c9cdbc7-1f7d-4bdb-b3e0-b8b79463b9dc
+	joinOnDateBehavior: datePartOnly
+	fromColumn: Dim_Date.date
+	toColumn: LocalDateTable_34dde0e0-740c-496d-b853-c69150c88f0a.Date
+
+relationship bc2c20da-cce4-48b3-b94b-4a58f004c375
+	joinOnDateBehavior: datePartOnly
+	fromColumn: Fact.date
+	toColumn: LocalDateTable_1f64cac8-39d7-4c55-9a54-4928d213844c.Date
+
+relationship AutoDetected_3e42aac6-fd68-47fc-9be4-e3498907d3dd
+	fromColumn: Fact.region
+	toColumn: Dim_region.region
+
+relationship AutoDetected_6cda856b-5faf-4ff5-a809-37f477b0941b
+	fromColumn: Fact.channel
+	toColumn: Dim_channel.channel
+
+relationship AutoDetected_84a6c501-a967-49b3-9f21-13b57400529f
+	fromColumn: Fact.Product_id
+	toColumn: Dim_Product.Product_id
+
+relationship AutoDetected_ff8a3eb3-dc16-4da5-b538-09b2a17dbbef
+	fromColumn: Fact.outlet_id
+	toColumn: Dim_outlet.outlet_id
+
+relationship AutoDetected_647c30a1-27b3-47d5-9508-7f499c90136b
+	fromColumn: Fact.date_id
+	toColumn: Dim_Date.date_id
+
+relationship 7fc4f9d6-1d34-eb4a-4a1a-96b0538162be
+	crossFilteringBehavior: bothDirections
+	toCardinality: many
+	fromColumn: Dim_outlet.'Dim_channel.channel_id'
+	toColumn: Dim_target.'Dim_channel.channel_id'
+
+relationship 67ca28e5-ad08-3e51-3fb6-771d5e0c2eff
+	isActive: false
+	crossFilteringBehavior: bothDirections
+	toCardinality: many
+	fromColumn: Dim_outlet.'Dim_region.region_id'
+	toColumn: Dim_target.'Dim_region.region_id'
+
+relationship 142b053c-6b89-1222-00fd-2bf50e1919c3
+	fromColumn: Dim_target.'Dim_region.region_id'
+	toColumn: Dim_region.region_id
+
+relationship b0ae3027-11ca-95ed-1e2f-518b21cb091b
+	fromColumn: Dim_target.'Dim_channel.channel_id'
+	toColumn: Dim_channel.channel_id
+
+relationship 78d6fb5b-acf5-0372-9bb2-85488a66d42e
+	isActive: false
+	fromColumn: Dim_outlet.'Dim_region.region_id'
+	toColumn: Dim_region.region_id
+

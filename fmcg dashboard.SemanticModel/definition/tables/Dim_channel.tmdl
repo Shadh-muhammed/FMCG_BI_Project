@@ -1,0 +1,36 @@
+table Dim_channel
+	lineageTag: c7e53218-5133-4eb2-a0b2-c9272d55da49
+
+	column channel_id
+		dataType: string
+		lineageTag: b1899971-a1ef-4143-8bb5-7d032a5f1ec4
+		summarizeBy: none
+		sourceColumn: channel_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column channel
+		dataType: string
+		lineageTag: 19f477cf-eb38-4b97-94d1-a9fc38ba8f31
+		summarizeBy: none
+		sourceColumn: channel
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Dim_channel = m
+		mode: import
+		source =
+				let
+				    Source = Excel.Workbook(File.Contents("D:\fmcg project\data\FMCG_2022_2024.xlsx"), null, true),
+				    Dim_channel_Sheet = Source{[Item="Dim_channel",Kind="Sheet"]}[Data],
+				    #"Changed Type" = Table.TransformColumnTypes(Dim_channel_Sheet,{{"Column1", type text}, {"Column2", type text}}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Changed Type",{{"Column1", "channel_id"}, {"Column2", "channel"}}),
+				    #"Promoted Headers" = Table.PromoteHeaders(#"Renamed Columns", [PromoteAllScalars=true]),
+				    #"Changed Type1" = Table.TransformColumnTypes(#"Promoted Headers",{{"channel_id", type text}, {"channel", type text}})
+				in
+				    #"Changed Type1"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

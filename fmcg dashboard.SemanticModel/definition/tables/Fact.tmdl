@@ -1,0 +1,209 @@
+table Fact
+	lineageTag: 77d74e0f-20f1-4f52-ad39-16e4c7280334
+
+	column date_id
+		dataType: int64
+		formatString: 0
+		lineageTag: e1147917-5a9a-4d31-ad93-1eed1c7a7f8f
+		summarizeBy: none
+		sourceColumn: date_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column Product_id
+		dataType: string
+		lineageTag: 458d6096-03b0-418a-9013-4e0d96217053
+		summarizeBy: none
+		sourceColumn: Product_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column region_id
+		dataType: string
+		lineageTag: d71cb874-9917-48c6-95cc-dda75abadce7
+		summarizeBy: none
+		sourceColumn: region_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column channel_id
+		dataType: string
+		lineageTag: d9ad0c82-da78-4c5d-953d-b0a16a66401e
+		summarizeBy: none
+		sourceColumn: channel_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column outlet_id
+		dataType: string
+		lineageTag: 0053091e-891d-41c9-9255-8697d87bf305
+		summarizeBy: none
+		sourceColumn: outlet_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column distributor_name
+		dataType: string
+		lineageTag: 34a2c65f-31d8-46fc-861b-f5bd8a76a48c
+		summarizeBy: none
+		sourceColumn: distributor_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 0f39b4a3-749a-4e94-bb46-38d648e6fe8a
+		summarizeBy: none
+		sourceColumn: date
+
+		variation Variation
+			isDefault
+			relationship: bc2c20da-cce4-48b3-b94b-4a58f004c375
+			defaultHierarchy: LocalDateTable_1f64cac8-39d7-4c55-9a54-4928d213844c.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column sku
+		dataType: string
+		lineageTag: fbf83c0f-57fe-4a9b-b2f5-11c71fe2f828
+		summarizeBy: none
+		sourceColumn: sku
+
+		annotation SummarizationSetBy = Automatic
+
+	column brand
+		dataType: string
+		lineageTag: cbcdf927-48bc-41a1-a419-53f47ca2008e
+		summarizeBy: none
+		sourceColumn: brand
+
+		annotation SummarizationSetBy = Automatic
+
+	column segment
+		dataType: string
+		lineageTag: 50f516e8-06fe-427b-882c-db70b6f1ef08
+		summarizeBy: none
+		sourceColumn: segment
+
+		annotation SummarizationSetBy = Automatic
+
+	column category
+		dataType: string
+		lineageTag: 0e91a795-85fe-45e2-a435-1d4a2d2535a0
+		summarizeBy: none
+		sourceColumn: category
+
+		annotation SummarizationSetBy = Automatic
+
+	column channel
+		dataType: string
+		lineageTag: c071388a-5f59-47cc-ac00-01a6bc77090d
+		summarizeBy: none
+		sourceColumn: channel
+
+		annotation SummarizationSetBy = Automatic
+
+	column region
+		dataType: string
+		lineageTag: 1ee7ea7b-b28b-400a-a044-8609f2ad6444
+		summarizeBy: none
+		sourceColumn: region
+
+		annotation SummarizationSetBy = Automatic
+
+	column pack_type
+		dataType: string
+		lineageTag: db05a039-7671-49c4-b481-ee85d5885711
+		summarizeBy: none
+		sourceColumn: pack_type
+
+		annotation SummarizationSetBy = Automatic
+
+	column price_unit
+		dataType: double
+		lineageTag: 1ab8eb03-55eb-49e5-8354-13f6b591a63f
+		summarizeBy: sum
+		sourceColumn: price_unit
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column promotion_flag
+		dataType: int64
+		formatString: 0
+		lineageTag: 39d78fd0-1072-4192-b034-9bb2c57d71b6
+		summarizeBy: sum
+		sourceColumn: promotion_flag
+
+		annotation SummarizationSetBy = Automatic
+
+	column delivery_days
+		dataType: int64
+		formatString: 0
+		lineageTag: 2e4c8ba3-e124-408a-b461-1a1248325d24
+		summarizeBy: sum
+		sourceColumn: delivery_days
+
+		annotation SummarizationSetBy = Automatic
+
+	column stock_available
+		dataType: int64
+		formatString: 0
+		lineageTag: 37a0dcf9-3688-4096-b30f-c99472840ffa
+		summarizeBy: sum
+		sourceColumn: stock_available
+
+		annotation SummarizationSetBy = Automatic
+
+	column delivered_qty
+		dataType: int64
+		formatString: 0
+		lineageTag: a7445075-89ba-450d-bdff-1a0d7496a33a
+		summarizeBy: sum
+		sourceColumn: delivered_qty
+
+		annotation SummarizationSetBy = Automatic
+
+	column units_sold
+		dataType: int64
+		formatString: 0
+		lineageTag: 58ab6713-0c74-44ea-ae9b-6182b668af9b
+		summarizeBy: sum
+		sourceColumn: units_sold
+
+		annotation SummarizationSetBy = Automatic
+
+	column Target_Key =
+			
+			RELATED(Dim_region[region])
+			& "_"
+			& RELATED(Dim_Channel[channel])
+			& "_"
+			& YEAR(Fact[date])
+			& "_"
+			& FORMAT('Fact'[date], "MMMM")
+		lineageTag: ddb11520-7c4e-4d09-9438-0a17071b89fc
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact = m
+		mode: import
+		source =
+				let
+				    Source = Excel.Workbook(File.Contents("D:\fmcg project\data\FMCG_2022_2024.xlsx"), null, true),
+				    Fact_Sheet = Source{[Item="Fact",Kind="Sheet"]}[Data],
+				    #"Promoted Headers" = Table.PromoteHeaders(Fact_Sheet, [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"date_id", Int64.Type}, {"Product_id", type text}, {"region_id", type text}, {"channel_id", type text}, {"outlet_id", type text}, {"distributor_name", type text}, {"date", type date}, {"sku", type text}, {"brand", type text}, {"segment", type text}, {"category", type text}, {"channel", type text}, {"region", type text}, {"pack_type", type text}, {"price_unit", type number}, {"promotion_flag", Int64.Type}, {"delivery_days", Int64.Type}, {"stock_available", Int64.Type}, {"delivered_qty", Int64.Type}, {"units_sold", Int64.Type}, {"Column21", type any}, {"Column22", type any}}),
+				    #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"Column21", "Column22"})
+				in
+				    #"Removed Columns"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,92 @@
+table Dim_Date
+	lineageTag: dd6447d1-b633-4e9e-85ed-e65e0a002d5f
+
+	column date_id
+		dataType: int64
+		formatString: 0
+		lineageTag: c9caf4ff-3013-4936-bdbe-658b29364b25
+		summarizeBy: none
+		sourceColumn: date_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 317c07bb-5606-48db-9991-a42746d704e3
+		summarizeBy: none
+		sourceColumn: date
+
+		variation Variation
+			isDefault
+			relationship: 9c9cdbc7-1f7d-4bdb-b3e0-b8b79463b9dc
+			defaultHierarchy: LocalDateTable_34dde0e0-740c-496d-b853-c69150c88f0a.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column year
+		dataType: int64
+		formatString: 0
+		lineageTag: e1682764-8840-4ded-9cfb-b9083f9741cb
+		summarizeBy: sum
+		sourceColumn: year
+
+		annotation SummarizationSetBy = Automatic
+
+	column month
+		dataType: int64
+		formatString: 0
+		lineageTag: 5a79909f-ab18-4bac-b807-3a1474a3b60a
+		summarizeBy: sum
+		sourceColumn: month
+
+		annotation SummarizationSetBy = Automatic
+
+	column month_name
+		dataType: string
+		lineageTag: 5573f188-5fce-4c07-9b06-14f4fff1a08a
+		summarizeBy: none
+		sourceColumn: month_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column quarter
+		dataType: string
+		lineageTag: 59846b4b-27f6-4759-a70a-c9f390969daf
+		summarizeBy: none
+		sourceColumn: quarter
+
+		annotation SummarizationSetBy = Automatic
+
+	column day
+		dataType: int64
+		formatString: 0
+		lineageTag: c9c830da-d0b4-4abb-881c-9931405ef2b9
+		summarizeBy: sum
+		sourceColumn: day
+
+		annotation SummarizationSetBy = Automatic
+
+	column weekday
+		dataType: string
+		lineageTag: 7438fa68-07af-4143-bb39-7cdc9b2fc25f
+		summarizeBy: none
+		sourceColumn: weekday
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Dim_Date = m
+		mode: import
+		source =
+				let
+				    Source = Excel.Workbook(File.Contents("D:\fmcg project\data\FMCG_2022_2024.xlsx"), null, true),
+				    Dim_Date_Sheet = Source{[Item="Dim_Date",Kind="Sheet"]}[Data],
+				    #"Promoted Headers" = Table.PromoteHeaders(Dim_Date_Sheet, [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"date_id", Int64.Type}, {"date", type date}, {"year", Int64.Type}, {"month", Int64.Type}, {"month_name", type text}, {"quarter", type text}, {"day", Int64.Type}, {"weekday", type text}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_ResultType = Exception
+

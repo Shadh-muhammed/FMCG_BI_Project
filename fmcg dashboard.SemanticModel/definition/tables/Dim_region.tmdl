@@ -1,0 +1,36 @@
+table Dim_region
+	lineageTag: 44ed4620-a966-449d-a7ed-41a087dbf5c8
+
+	column region_id
+		dataType: string
+		lineageTag: ec8147f4-5ebc-437e-bb76-8ebe757f7226
+		summarizeBy: none
+		sourceColumn: region_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column region
+		dataType: string
+		lineageTag: fbb6d15c-066c-4ebb-8a3b-25942aa5e77a
+		summarizeBy: none
+		sourceColumn: region
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Dim_region = m
+		mode: import
+		source =
+				let
+				    Source = Excel.Workbook(File.Contents("D:\fmcg project\data\FMCG_2022_2024.xlsx"), null, true),
+				    Dim_location_Sheet = Source{[Item="Dim_location",Kind="Sheet"]}[Data],
+				    #"Changed Type" = Table.TransformColumnTypes(Dim_location_Sheet,{{"Column1", type text}, {"Column2", type text}}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Changed Type",{{"Column1", "region_id"}, {"Column2", "region"}}),
+				    #"Promoted Headers" = Table.PromoteHeaders(#"Renamed Columns", [PromoteAllScalars=true]),
+				    #"Changed Type1" = Table.TransformColumnTypes(#"Promoted Headers",{{"region_id", type text}, {"region", type text}})
+				in
+				    #"Changed Type1"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+
