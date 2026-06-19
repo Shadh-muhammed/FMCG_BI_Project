@@ -28,29 +28,30 @@ relationship AutoDetected_647c30a1-27b3-47d5-9508-7f499c90136b
 	fromColumn: Fact.date_id
 	toColumn: Dim_Date.date_id
 
-relationship 7fc4f9d6-1d34-eb4a-4a1a-96b0538162be
-	crossFilteringBehavior: bothDirections
-	toCardinality: many
-	fromColumn: Dim_outlet.'Dim_channel.channel_id'
-	toColumn: Dim_target.'Dim_channel.channel_id'
-
-relationship 67ca28e5-ad08-3e51-3fb6-771d5e0c2eff
-	isActive: false
-	crossFilteringBehavior: bothDirections
-	toCardinality: many
-	fromColumn: Dim_outlet.'Dim_region.region_id'
-	toColumn: Dim_target.'Dim_region.region_id'
-
-relationship 142b053c-6b89-1222-00fd-2bf50e1919c3
-	fromColumn: Dim_target.'Dim_region.region_id'
-	toColumn: Dim_region.region_id
-
-relationship b0ae3027-11ca-95ed-1e2f-518b21cb091b
-	fromColumn: Dim_target.'Dim_channel.channel_id'
-	toColumn: Dim_channel.channel_id
-
 relationship 78d6fb5b-acf5-0372-9bb2-85488a66d42e
 	isActive: false
 	fromColumn: Dim_outlet.'Dim_region.region_id'
 	toColumn: Dim_region.region_id
+
+relationship AutoDetected_484494bb-3c40-4d38-bbb6-36ab6a12a9c0
+	fromColumn: Dim_Target.Region
+	toColumn: Dim_region.region
+
+relationship AutoDetected_c3bc1e5e-f76e-49a0-a085-cb4999b4eab9
+	fromColumn: Dim_Target.Channel
+	toColumn: Dim_channel.channel
+
+relationship 267434b4-481f-e630-e2bf-a03f7ded1a60
+	isActive: false
+	crossFilteringBehavior: bothDirections
+	toCardinality: many
+	fromColumn: Dim_outlet.'Dim_channel.channel_id'
+	toColumn: Fact.channel_id
+
+relationship 6f8b0d7c-9f06-d419-e39d-4bf7628f9672
+	isActive: false
+	crossFilteringBehavior: bothDirections
+	toCardinality: many
+	fromColumn: Dim_outlet.'Dim_region.region_id'
+	toColumn: Fact.region_id
 

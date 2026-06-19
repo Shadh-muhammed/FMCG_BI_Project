@@ -8,12 +8,11 @@ model Model
 
 annotation __PBI_TimeIntelligenceEnabled = 1
 
-annotation PBI_QueryOrder = ["Dim_target","Dim_Product","Dim_outlet","Dim_region","Dim_Date","Dim_channel","Fact"]
+annotation PBI_QueryOrder = ["Dim_Product","Dim_outlet","Dim_region","Dim_Date","Dim_channel","Fact","Dim_Target","_Measures"]
 
 annotation PBI_ProTooling = ["DevMode"]
 
 ref table DateTableTemplate_423c10bc-8cb3-4e4f-b659-b86f452327cb
-ref table Dim_target
 ref table Dim_Product
 ref table Dim_outlet
 ref table Dim_region
@@ -22,6 +21,8 @@ ref table LocalDateTable_34dde0e0-740c-496d-b853-c69150c88f0a
 ref table Dim_channel
 ref table Fact
 ref table LocalDateTable_1f64cac8-39d7-4c55-9a54-4928d213844c
+ref table Dim_Target
+ref table _Measures
 
 ref cultureInfo en-US
 

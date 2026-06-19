@@ -1,0 +1,53 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "8ecb98bc396ad994354e",
+  "position": {
+    "x": 7.5250313849168684,
+    "y": 160.53400287822652,
+    "z": 2000,
+    "height": 161.78817477571266,
+    "width": 294.730395909244,
+    "tabOrder": 2000
+  },
+  "visual": {
+    "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+    "query": {
+      "queryState": {
+        "content": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "KPI HTML - Avg Per Outlet"
+                }
+              },
+              "queryRef": "_Measures.KPI HTML - Avg Per Outlet",
+              "nativeQueryRef": "KPI HTML - Avg Per Outlet"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

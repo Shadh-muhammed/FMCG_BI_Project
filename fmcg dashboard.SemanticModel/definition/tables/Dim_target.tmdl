@@ -1,91 +1,79 @@
-table Dim_target
-	lineageTag: bbe50862-cb29-4f08-af8a-40fbe5745c7b
+table Dim_Target
+	lineageTag: 8a6c2451-5122-4efa-9f54-c09d58a40331
 
-	column target_id
+	column Target_ID
 		dataType: string
-		lineageTag: 550a793e-b1a3-4d7f-bedc-a625e3865e12
+		lineageTag: 7164cec6-ff28-4df3-b427-259358d378fd
 		summarizeBy: none
-		sourceColumn: target_id
+		sourceColumn: Target_ID
 
 		annotation SummarizationSetBy = Automatic
 
-	column region
+	column Region
 		dataType: string
-		lineageTag: 4b583ba4-a482-4e99-9226-843a64573811
+		lineageTag: c1574901-be1b-4eb3-94ec-45a50d77c0e8
 		summarizeBy: none
-		sourceColumn: region
+		sourceColumn: Region
 
 		annotation SummarizationSetBy = Automatic
 
-	column channel
+	column Channel
 		dataType: string
-		lineageTag: e5954814-f790-48c9-a992-c596979bf833
+		lineageTag: 2ac1e3a0-7570-4ce9-9e34-81cb3bc9be32
 		summarizeBy: none
-		sourceColumn: channel
+		sourceColumn: Channel
 
 		annotation SummarizationSetBy = Automatic
 
-	column year
-		dataType: int64
-		formatString: 0
-		lineageTag: 48227229-e51b-4541-b652-4c93ec75df65
-		summarizeBy: sum
-		sourceColumn: year
-
-		annotation SummarizationSetBy = Automatic
-
-	column month
+	column Year
 		dataType: string
-		lineageTag: e7a067ee-5849-4793-b308-42ebb7580204
+		lineageTag: 15e9f96f-bf85-4fe2-9ed3-3a3cc3edf061
 		summarizeBy: none
-		sourceColumn: month
+		sourceColumn: Year
 
 		annotation SummarizationSetBy = Automatic
 
-	column sales_target
-		dataType: int64
-		formatString: 0
-		lineageTag: 0c80a61b-cbc4-4a0f-9520-fd13ffb4ab36
-		summarizeBy: sum
-		sourceColumn: sales_target
-
-		annotation SummarizationSetBy = Automatic
-
-	column distribution_target_%
-		dataType: int64
-		formatString: 0
-		lineageTag: ee28f866-d826-476a-8bf3-f90ad728e20b
-		summarizeBy: sum
-		sourceColumn: distribution_target_%
-
-		annotation SummarizationSetBy = Automatic
-
-	column outlet_coverage_target_%
-		dataType: int64
-		formatString: 0
-		lineageTag: 1c115689-c107-4fda-b242-e822348c974a
-		summarizeBy: sum
-		sourceColumn: outlet_coverage_target_%
-
-		annotation SummarizationSetBy = Automatic
-
-	column Target_Key =
-			
-			Dim_Target[region]
-			& "_"
-			& Dim_Target[channel]
-			& "_"
-			& Dim_Target[year]
-			& "_"
-			& Dim_Target[month]
-		lineageTag: 32c16dcc-7695-47ee-84d1-2e390a10c522
+	column Month
+		dataType: string
+		lineageTag: b92e6a71-cbe0-4617-a87e-33dcd81d6a14
 		summarizeBy: none
+		sourceColumn: Month
 
 		annotation SummarizationSetBy = Automatic
+
+	column Sales_Target
+		dataType: double
+		lineageTag: 0ee9a777-6fe4-4952-9927-6852257afb21
+		summarizeBy: sum
+		sourceColumn: Sales_Target
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Availability_Target
+		dataType: double
+		lineageTag: 7659f30b-0e79-43da-ba8a-7f1a085bf2e4
+		summarizeBy: sum
+		sourceColumn: Availability_Target
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column FillRate_Target
+		dataType: double
+		lineageTag: 3cad6aad-284d-4a0a-b20e-77d8e19b237d
+		summarizeBy: sum
+		sourceColumn: FillRate_Target
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
 	column 'Dim_region.region_id'
 		dataType: string
-		lineageTag: cace997f-c318-4fec-ab42-b1a31c8e948c
+		lineageTag: cba7cd9d-aff5-43e2-bdbc-e73a29cd7b76
 		summarizeBy: none
 		sourceColumn: Dim_region.region_id
 
@@ -93,31 +81,31 @@ table Dim_target
 
 	column 'Dim_channel.channel_id'
 		dataType: string
-		lineageTag: cc95df9f-0eed-4169-a9f2-5cd42a20b6fb
+		lineageTag: e321d890-65c7-4077-8e07-0b6dadeaaac3
 		summarizeBy: none
 		sourceColumn: Dim_channel.channel_id
 
 		annotation SummarizationSetBy = Automatic
 
-	partition Dim_target = m
+	partition Dim_Target = m
 		mode: import
 		source =
 				let
 				    Source = Excel.Workbook(File.Contents("D:\fmcg project\data\FMCG_2022_2024.xlsx"), null, true),
-				    Dim_target_Sheet = Source{[Item="Dim_target",Kind="Sheet"]}[Data],
-				    #"Promoted Headers" = Table.PromoteHeaders(Dim_target_Sheet, [PromoteAllScalars=true]),
-				    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"target_id", type text}, {"region", type text}, {"channel", type text}, {"year", Int64.Type}, {"month", type text}, {"sales_target", Int64.Type}, {"distribution_target_%", Int64.Type}, {"outlet_coverage_target_%", Int64.Type}}),
-				    #"Added Prefix" = Table.TransformColumns(#"Changed Type", {{"region", each "PL-" & _, type text}}),
-				    #"Merged Queries" = Table.NestedJoin(#"Added Prefix", {"region"}, Dim_region, {"region"}, "Dim_region", JoinKind.LeftOuter),
-				    #"Expanded Dim_region" = Table.ExpandTableColumn(#"Merged Queries", "Dim_region", {"region_id"}, {"Dim_region.region_id"}),
-				    #"Replaced Value" = Table.ReplaceValue(#"Expanded Dim_region","Online","E-commerce",Replacer.ReplaceText,{"channel"}),
-				    #"Replaced Value1" = Table.ReplaceValue(#"Replaced Value","Wholesale","Discount",Replacer.ReplaceText,{"channel"}),
-				    #"Merged Queries1" = Table.NestedJoin(#"Replaced Value1", {"channel"}, Dim_channel, {"channel"}, "Dim_channel", JoinKind.LeftOuter),
-				    #"Expanded Dim_channel" = Table.ExpandTableColumn(#"Merged Queries1", "Dim_channel", {"channel_id"}, {"Dim_channel.channel_id"})
+				    Dim_Target_Sheet = Source{[Item="Dim_Target",Kind="Sheet"]}[Data],
+				    #"Promoted Headers" = Table.PromoteHeaders(Dim_Target_Sheet, [PromoteAllScalars=true]),
+				    #"Added Prefix" = Table.TransformColumns(#"Promoted Headers", {{"Region", each "PL-" & _, type text}}),
+				    #"Merged Queries" = Table.NestedJoin(#"Added Prefix", {"Region"}, Dim_region, {"region"}, "Dim_region", JoinKind.LeftOuter),
+				    #"Replaced Value" = Table.ReplaceValue(#"Merged Queries","Wholesale","Discount",Replacer.ReplaceText,{"Channel"}),
+				    #"Replaced Value1" = Table.ReplaceValue(#"Replaced Value","Online","E-commerce",Replacer.ReplaceText,{"Channel"}),
+				    #"Merged Queries1" = Table.NestedJoin(#"Replaced Value1", {"Channel"}, Dim_channel, {"channel"}, "Dim_channel", JoinKind.LeftOuter),
+				    #"Expanded Dim_region" = Table.ExpandTableColumn(#"Merged Queries1", "Dim_region", {"region_id"}, {"Dim_region.region_id"}),
+				    #"Expanded Dim_channel" = Table.ExpandTableColumn(#"Expanded Dim_region", "Dim_channel", {"channel_id"}, {"Dim_channel.channel_id"}),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Expanded Dim_channel",{{"Sales_Target", type number}, {"Availability_Target", type number}, {"FillRate_Target", type number}})
 				in
-				    #"Expanded Dim_channel"
-
-	annotation PBI_ResultType = Table
+				    #"Changed Type"
 
 	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
 

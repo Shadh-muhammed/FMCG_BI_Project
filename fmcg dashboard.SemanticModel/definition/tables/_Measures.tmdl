@@ -1,0 +1,293 @@
+table _Measures
+	lineageTag: ab04c4a4-5f0c-4a86-a69c-14d142e6eb1e
+
+	measure 'Total Revenue' =
+			
+			SUM ( Fact[Sales Amount] )
+		lineageTag: e81d7dbf-c154-44b5-8bf0-d0e930a86253
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Revenue 2024' = ```
+			
+			CALCULATE ( [Total Revenue], Dim_Date[year] = 2024 )
+			
+			```
+		lineageTag: 29172e91-ab0f-41ab-8a72-23f61df6203c
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Revenue 2023' = ```
+			
+			CALCULATE ( [Total Revenue], Dim_Date[year] = 2023 )
+			
+			```
+		lineageTag: d0e3180e-8c4c-4661-b85e-9a26ef1b7c03
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Revenue 2022' = ```
+			
+			CALCULATE ( [Total Revenue], Dim_Date[year] = 2022 )
+			
+			```
+		lineageTag: 037b69ab-9510-483a-96d8-1fff85ccabe3
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Revenue YoY %' =
+			
+			DIVIDE ( [Total Revenue 2024] - [Total Revenue 2023], [Total Revenue 2023], 0 )
+		lineageTag: 1c98e2df-69b8-48f9-be5a-134f4679bce0
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Target' =
+			
+			SUMX ( Dim_Target, VALUE ( Dim_Target[Sales_Target] ) )
+		lineageTag: 7bf1e802-6ab8-4359-8bdb-290fddc89c69
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Achievement %' =
+			
+			VAR TargetYear = VALUE ( SELECTEDVALUE ( Dim_Target[Year], "2024" ) )
+			VAR RevenueSamePeriod =
+			    CALCULATE ( [Total Revenue], Dim_Date[year] = TargetYear )
+			RETURN
+			    DIVIDE ( RevenueSamePeriod, [Total Target], 0 )
+		lineageTag: 1bb2c99b-89f1-46c8-aa2d-c259b70765fc
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Revenue Variance (AED)' =
+			
+			VAR TargetYear = VALUE ( SELECTEDVALUE ( Dim_Target[Year], "2024" ) )
+			VAR RevenueSamePeriod =
+			    CALCULATE ( [Total Revenue], Dim_Date[year] = TargetYear )
+			RETURN
+			    RevenueSamePeriod - [Total Target]
+		lineageTag: ca93b706-5534-44d3-95fb-08ddb62f476b
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Achievement Status' = ```
+			
+			SWITCH (
+			    TRUE (),
+			    [Achievement %] >= 1,    "On Target",
+			    [Achievement %] >= 0.9,  "Near Target",
+			    "Below Target"
+			)
+			
+			```
+		lineageTag: 517db952-1946-49f7-a4af-3e0dd0fd72c2
+
+	measure 'Active Outlets' =
+			
+			DISTINCTCOUNT ( Fact[outlet_id] )
+		formatString: 0
+		lineageTag: d90bd69a-d483-41e7-a6d4-5cab463bbfbb
+
+	measure 'Outlet Universe' = ```
+			
+			COUNTROWS ( Dim_outlet )
+			
+			```
+		formatString: 0
+		lineageTag: ec828cb2-df37-445b-bab2-3603c478a8d4
+
+	measure 'Outlet Coverage %' = ```
+			
+			DIVIDE ( [Active Outlets], [Outlet Universe], 0 )
+			
+			```
+		lineageTag: 1d03f3c1-6ad3-4a8c-a603-c42513f4ea4e
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Avg Revenue per Outlet' = ```
+			
+			DIVIDE ( [Total Revenue], [Active Outlets], 0 )
+			
+			```
+		lineageTag: 82d2dc7c-157d-46c8-9cc9-c1ed27946ffb
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Avg Revenue per Outlet 2024' =
+			
+			DIVIDE ( [Total Revenue 2024], [Active Outlets], 0 )
+		lineageTag: 3d1dcdfd-f67f-40d5-9f66-5b6196d29a53
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Distributor Rank' =
+			
+			RANKX ( ALLSELECTED ( Fact[distributor_name] ), [Total Revenue], , DESC, Dense )
+		formatString: 0
+		lineageTag: 06d753d7-1d88-4068-bc69-0dd58552279b
+
+	measure 'Top Distributor' =
+			
+			VAR T = TOPN ( 1, ALLSELECTED ( Fact[distributor_name] ), [Total Revenue], DESC )
+			RETURN
+			    MAXX ( T, Fact[distributor_name] )
+		lineageTag: 7ceec4d3-e3e2-4db6-8346-699df4b2060f
+
+	measure 'Distribution Index' = ```
+			
+			[Outlet Coverage %] * 100
+			
+			```
+		lineageTag: 36045b38-37fd-4e15-99ea-5ea10d49c024
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Promo Compliance Index' = ```
+			
+			AVERAGE ( Fact[promotion_flag] ) * 100
+			
+			```
+		lineageTag: d7753f76-26ae-474b-8d05-1f28a38b18b4
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Sales Achievement Index' = ```
+			
+			MIN ( [Achievement %] * 100, 100 )
+			
+			```
+		lineageTag: 3fe6a955-d4a2-4347-ba90-838d085f3e69
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'CD Health Score' = ```
+			
+			( [Distribution Index] + [Promo Compliance Index] + [Sales Achievement Index] ) / 3
+			
+			```
+		lineageTag: 780a9b04-21e2-4960-87b6-d6db358034ae
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Health Score Status' =
+			
+			SWITCH (
+			    TRUE (),
+			    [CD Health Score] >= 80, "Strong",
+			    [CD Health Score] >= 60, "Moderate",
+			    "Needs Attention"
+			)
+		lineageTag: 24c551e7-a342-4a1b-a44a-757083687515
+
+	measure 'Revenue (Current Year)' = [Total Revenue 2024]
+		lineageTag: 9df5c348-9a42-46bf-83e0-f25cef8b0d42
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Revenue (Prior Year)' = [Total Revenue 2023]
+		lineageTag: 65e91817-7d4d-41b5-aad0-3df4d0573296
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'KPI HTML - Achievement' =
+			
+			VAR _Status   = [Achievement Status]
+			VAR _AchPct   = [Achievement %]
+			VAR _Color    = SWITCH ( TRUE (), _AchPct >= 1, "#2C5C3C", _AchPct >= 0.9, "#8C5C0D", "#8C2E20" )
+			VAR _Bg       = SWITCH ( TRUE (), _AchPct >= 1, "#E7F2EB", _AchPct >= 0.9, "#FAF1DF", "#F8E8E4" )
+			VAR _Accent   = SWITCH ( TRUE (), _AchPct >= 1, "#3F7D52", _AchPct >= 0.9, "#BE7A12", "#B23E2B" )
+			RETURN
+			"<div style='font-family:Segoe UI,Arial,sans-serif;background:#FFFFFF;border-top:3px solid " & _Accent & ";
+			border-radius:10px;padding:16px 18px;height:90%;box-sizing:border-box;'>" &
+			"<div style='font-size:10px;font-weight:700;letter-spacing:1px;color:#67726C;text-transform:uppercase;
+			margin-bottom:8px;'>ACHIEVEMENT</div>" &
+			"<div style='font-size:28px;font-weight:700;color:" & _Color & ";line-height:1;'>" & FORMAT ( _AchPct, "0.0%" ) & "</div>" &
+			"<div style='font-size:11px;color:#67726C;margin:8px 0 10px;'>vs 100% target</div>" &
+			"<div style='display:inline-block;font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;
+			background:" & _Bg & ";color:" & _Color & ";'>" & _Status & "</div>" &
+			"</div>"
+		lineageTag: 9f26d9ea-f3c6-47ff-a38e-bcd1d759acbe
+
+	measure 'KPI HTML - Avg Per Outlet' =
+			
+			VAR _Avg      = [Avg Revenue per Outlet 2024]
+			VAR _PriorAvg = DIVIDE ( [Total Revenue 2023], CALCULATE ( DISTINCTCOUNT ( Fact[outlet_id] ), Dim_Date[year] = 2023 ), 0 )
+			VAR _Delta    = DIVIDE ( _Avg - _PriorAvg, _PriorAvg, 0 )
+			VAR _Color    = IF ( _Delta >= 0, "#2C5C3C", "#8C2E20" )
+			VAR _Bg       = IF ( _Delta >= 0, "#E7F2EB", "#F8E8E4" )
+			VAR _Sign     = IF ( _Delta >= 0, "+", "-" )
+			RETURN
+			"<div style='font-family:Segoe UI,Arial,sans-serif;background:#FFFFFF;border-top:3px solid #0D5C56;
+			border-radius:10px;padding:16px 18px;height:90%;box-sizing:border-box;'>" &
+			"<div style='font-size:10px;font-weight:700;letter-spacing:1px;color:#67726C;text-transform:uppercase;
+			margin-bottom:8px;'>AVG REVENUE / OUTLET</div>" &
+			"<div style='font-size:28px;font-weight:700;color:#1C2624;line-height:1;'>AED " & FORMAT ( _Avg, "#,##0," ) & "K</div>" &
+			"<div style='font-size:11px;color:#67726C;margin:8px 0 10px;'>annualised, 2024</div>" &
+			"<div style='display:inline-block;font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;
+			background:" & _Bg & ";color:" & _Color & ";'>" & _Sign & FORMAT ( ABS ( _Delta ), "0.0%" ) & " vs 2023</div>" &
+			"</div>"
+		lineageTag: 4e19ff48-ebf5-423a-82e5-79a131780c62
+
+	measure 'KPI HTML - Outlet Coverage' =
+			
+			VAR _Coverage = [Outlet Coverage %]
+			RETURN
+			"<div style='font-family:Segoe UI,Arial,sans-serif;background:#FFFFFF;border-top:3px solid #0D5C56;
+			border-radius:10px;padding:16px 18px;height:90%;box-sizing:border-box;'>" &
+			"<div style='font-size:10px;font-weight:700;letter-spacing:1px;color:#67726C;text-transform:uppercase;
+			margin-bottom:8px;'>OUTLET COVERAGE</div>" &
+			"<div style='font-size:28px;font-weight:700;color:#1C2624;line-height:1;'>" &
+			[Active Outlets] & "<span style='font-size:14px;font-weight:500;color:#67726C;'> / " & [Outlet Universe] & "</span></div>" &
+			"<div style='font-size:11px;color:#67726C;margin:8px 0 10px;'>active outlets of universe</div>" &
+			"<div style='display:inline-block;font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;
+			background:#E2EFEE;color:#0D5C56;'>" & FORMAT ( _Coverage, "0.0%" ) & " covered</div>" &
+			"</div>"
+		lineageTag: fae89983-1af8-4e90-8d2f-100eb2554b99
+
+	measure 'KPI HTML - Revenue' = ```
+			
+			VAR _Status      = [Achievement Status]
+			VAR _AchPct      = [Achievement %]
+			VAR _Color       = SWITCH ( TRUE (), _AchPct >= 1, "#2C5C3C", _AchPct >= 0.9, "#8C5C0D", "#8C2E20" )
+			VAR _Bg          = SWITCH ( TRUE (), _AchPct >= 1, "#E7F2EB", _AchPct >= 0.9, "#FAF1DF", "#F8E8E4" )
+			VAR _ValueText   = "AED " & FORMAT ( [Total Revenue 2024], "#,##0,,.0" ) & "M"
+			VAR _TargetText  = "Target AED " & FORMAT ( [Total Target], "#,##0,,.0" ) & "M"
+			VAR _VarSign     = IF ( [Revenue Variance (AED)] >= 0, "+", "-" )
+			VAR _VarText     = _VarSign & "AED " & FORMAT ( ABS ( [Revenue Variance (AED)] ), "#,##0,,.0" ) & "M"
+			RETURN
+			"<div style='font-family:Segoe UI,Arial,sans-serif;background:#FFFFFF;border-top:3px solid #0D5C56;
+			border-radius:10px;padding:16px 18px;height:90%;box-sizing:border-box;'>" &
+			"<div style='font-size:10px;font-weight:700;letter-spacing:1px;color:#67726C;text-transform:uppercase;
+			margin-bottom:8px;'>TOTAL REVENUE 2024</div>" &
+			"<div style='font-size:28px;font-weight:700;color:#1C2624;line-height:1;'>" & _ValueText & "</div>" &
+			"<div style='font-size:11px;color:#67726C;margin:8px 0 10px;'>" & _TargetText & "</div>" &
+			"<div style='display:inline-block;font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;
+			background:" & _Bg & ";color:" & _Color & ";'>" & _VarText & "</div>" &
+			"</div>"
+			
+			```
+		lineageTag: 2d50162a-e20c-4658-ae0d-edf6530703c7
+
+	column Column1
+		dataType: string
+		lineageTag: 58a8cd9b-f39f-4372-8976-5f73eb4c75e3
+		summarizeBy: none
+		sourceColumn: Column1
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i44FAA==", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [Column1 = _t]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Column1", type text}})
+				in
+				    #"Changed Type"
+
+	changedProperty = Name
+
+	annotation PBI_ResultType = Table
+

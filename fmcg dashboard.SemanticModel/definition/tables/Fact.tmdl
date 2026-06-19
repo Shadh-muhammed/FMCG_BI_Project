@@ -1,6 +1,12 @@
 table Fact
 	lineageTag: 77d74e0f-20f1-4f52-ad39-16e4c7280334
 
+	measure 'Total Outlets' =
+			
+			COUNTROWS(Dim_outlet)
+		formatString: 0
+		lineageTag: 5e187772-ac69-450f-aea3-2b64b1b56ca9
+
 	column date_id
 		dataType: int64
 		formatString: 0
@@ -177,19 +183,15 @@ table Fact
 
 		annotation SummarizationSetBy = Automatic
 
-	column Target_Key =
+	column 'Sales Amount' =
 			
-			RELATED(Dim_region[region])
-			& "_"
-			& RELATED(Dim_Channel[channel])
-			& "_"
-			& YEAR(Fact[date])
-			& "_"
-			& FORMAT('Fact'[date], "MMMM")
-		lineageTag: ddb11520-7c4e-4d09-9438-0a17071b89fc
-		summarizeBy: none
+			Fact[units_sold] * Fact[price_unit]
+		lineageTag: 3b159b03-db20-4188-9fb4-6e44aafb9e22
+		summarizeBy: sum
 
 		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
 	partition Fact = m
 		mode: import
@@ -198,8 +200,8 @@ table Fact
 				    Source = Excel.Workbook(File.Contents("D:\fmcg project\data\FMCG_2022_2024.xlsx"), null, true),
 				    Fact_Sheet = Source{[Item="Fact",Kind="Sheet"]}[Data],
 				    #"Promoted Headers" = Table.PromoteHeaders(Fact_Sheet, [PromoteAllScalars=true]),
-				    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"date_id", Int64.Type}, {"Product_id", type text}, {"region_id", type text}, {"channel_id", type text}, {"outlet_id", type text}, {"distributor_name", type text}, {"date", type date}, {"sku", type text}, {"brand", type text}, {"segment", type text}, {"category", type text}, {"channel", type text}, {"region", type text}, {"pack_type", type text}, {"price_unit", type number}, {"promotion_flag", Int64.Type}, {"delivery_days", Int64.Type}, {"stock_available", Int64.Type}, {"delivered_qty", Int64.Type}, {"units_sold", Int64.Type}, {"Column21", type any}, {"Column22", type any}}),
-				    #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"Column21", "Column22"})
+				    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"date_id", Int64.Type}, {"Product_id", type text}, {"region_id", type text}, {"channel_id", type text}, {"outlet_id", type text}, {"distributor_name", type text}, {"date", type date}, {"sku", type text}, {"brand", type text}, {"segment", type text}, {"category", type text}, {"channel", type text}, {"region", type text}, {"pack_type", type text}, {"price_unit", type number}, {"promotion_flag", Int64.Type}, {"delivery_days", Int64.Type}, {"stock_available", Int64.Type}, {"delivered_qty", Int64.Type}, {"units_sold", Int64.Type}}),
+				    #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"Column23", "Column1", "Column22"})
 				in
 				    #"Removed Columns"
 
