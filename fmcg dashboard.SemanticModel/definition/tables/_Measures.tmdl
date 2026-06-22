@@ -219,7 +219,7 @@ table _Measures
 			VAR _Bg       = IF ( _Delta >= 0, "#E7F2EB", "#F8E8E4" )
 			VAR _Sign     = IF ( _Delta >= 0, "+", "-" )
 			RETURN
-			"<div style='font-family:Segoe UI,Arial,sans-serif;background:#FFFFFF;border-top:3px solid #0D5C56;
+			"<div style='font-family:Segoe UI,Arial,sans-serif;background:#FFFFFF;border-top:3px solid #9B870C;
 			border-radius:10px;padding:16px 18px;height:90%;box-sizing:border-box;'>" &
 			"<div style='font-size:10px;font-weight:700;letter-spacing:1px;color:#67726C;text-transform:uppercase;
 			margin-bottom:8px;'>AVG REVENUE / OUTLET</div>" &
@@ -269,6 +269,400 @@ table _Measures
 			
 			```
 		lineageTag: 2d50162a-e20c-4658-ae0d-edf6530703c7
+
+	measure 'KPI HTML - CD Health Score' = ```
+			
+			VAR Score    = ROUND([CD Health Score], 0)
+			VAR DistVal  = ROUND([Distribution Index], 0)
+			VAR PromoVal = ROUND([Promo Compliance Index], 0)
+			VAR SalesVal = ROUND([Sales Achievement Index], 0)
+			
+			-- Donut math (radius = 40, circumference = 2π×40 ≈ 251.2)
+			VAR Circ    = 251.2
+			VAR Filled  = DIVIDE(Score, 100) * Circ
+			VAR Gap     = Circ - Filled
+			
+			-- Bar widths (max bar = 180px)
+			VAR DistW   = DIVIDE(DistVal,  100) * 180
+			VAR PromoW  = DIVIDE(PromoVal, 100) * 180
+			VAR SalesW  = DIVIDE(SalesVal, 100) * 180
+			
+			RETURN
+			
+			"<div style='display:flex;align-items:center;gap:20px;padding:20px;box-sizing:border-box;background:#FFFFFF;
+			             font-family:""Segoe UI"",sans-serif'>" 
+			&
+			
+			  -- DONUT SVG
+			  "<svg width='110' height='110' viewBox='0 0 110 110'>" &
+			    "<circle cx='55' cy='55' r='40' fill='none'
+			             stroke='#E8E4DC' stroke-width='10'/>" &
+			    "<circle cx='55' cy='55' r='40' fill='none'
+			             stroke='#C8972B' stroke-width='10'
+			             stroke-dasharray='" & Filled & " " & Gap & "'
+			             stroke-linecap='round'
+			             transform='rotate(-90 55 55)'/>" &
+			    "<text x='55' y='50' text-anchor='middle'
+			           font-size='17' font-weight='700' fill='#C8972B'>" & Score & "</text>" &
+			    "<text x='55' y='65' text-anchor='middle'
+			           font-size='10' fill='#999'>/ 100</text>" &
+			  "</svg>" &
+			
+			  -- BARS
+			  "<div style='flex:1'>" &
+			
+			    -- Distribution
+			    "<div style='margin-bottom:10px'>" &
+			      "<div style='display:flex;justify-content:space-between;
+			                   font-size='12px;margin-bottom:4px'>" &
+			        "<span style='color:#555'>Distribution</span>" &
+			        "<span style='font-weight:600;color:#222'>" & DistVal & "</span>" &
+			      "</div>" &
+			      "<div style='background:#E8E4DC;border-radius:4px;height:7px'>" &
+			        "<div style='background:#1A5C5A;width:" & DistW & "px;
+			                     height:7px;border-radius:4px'></div>" &
+			      "</div>" &
+			    "</div>" &
+			
+			    -- Promo Compliance
+			    "<div style='margin-bottom:10px'>" &
+			      "<div style='display:flex;justify-content:space-between;
+			                   font-size:12px;margin-bottom:4px'>" &
+			        "<span style='color:#555'>Promo Compliance</span>" &
+			        "<span style='font-weight:600;color:#222'>" & PromoVal & "</span>" &
+			      "</div>" &
+			      "<div style='background:#E8E4DC;border-radius:4px;height:7px'>" &
+			        "<div style='background:#C8972B;width:" & PromoW & "px;
+			                     height:7px;border-radius:4px'></div>" &
+			      "</div>" &
+			    "</div>" &
+			
+			    -- Sales Achievement
+			    "<div>" &
+			      "<div style='display:flex;justify-content:space-between;
+			                   font-size:12px;margin-bottom:4px'>" &
+			        "<span style='color:#555'>Sales Achievement</span>" &
+			        "<span style='font-weight:600;color:#222'>" & SalesVal & "</span>" &
+			      "</div>" &
+			      "<div style='background:#E8E4DC;border-radius:4px;height:7px'>" &
+			        "<div style='background:#8B1A1A;width:" & SalesW & "px;
+			                     height:7px;border-radius:4px'></div>" &
+			      "</div>" &
+			    "</div>" &
+			
+			  "</div>" &
+			"</div>"
+			```
+		lineageTag: d08f19cf-19cb-4c67-b168-d986f0403b71
+
+	measure 'KPI HTML - Territory Achievement' = ```
+			
+			VAR _Pct    = [Achievement %]   
+			VAR _Txt    = FORMAT(_Pct * 100, "0.0") & "%"
+			VAR _Arc    = IF(_Pct >= 1, "#1A5C5A", "#C0392B")
+			VAR _Status = IF(_Pct >= 1, "On Target", "Below Target")
+			VAR _PillBg = IF(_Pct >= 1, "#E3EEE0", "#FCEAEA")
+			VAR _PillFg = IF(_Pct >= 1, "#1A5C5A", "#8B1A1A")
+			
+			-- 180° gauge  |  r=75  |  half-circumference = 235.6
+			-- 0% = left (9 o'clock)   120% = right (3 o'clock)
+			VAR _H    = 240
+			VAR _Fill = DIVIDE(MIN(_Pct, 1.2), 1.2) * _H
+			
+			RETURN
+			"<div style='
+			font-family:Segoe UI,sans-serif;
+			padding:20px;
+			background:#FFFFFF;
+			border-radius:18px;
+			height:100%;
+			box-sizing:border-box;
+			'>"
+			 &
+			"<p style='font-size:10px;font-weight:700;letter-spacing:1px;color:#222;margin:0 0 2px'>TERRITORY ACHIEVEMENT</p>" &
+			"<div style='text-align:center'>" &
+			"<svg width='220' height='132' viewBox='0 0 220 132'>" &
+			
+			  -- Gray background track (full 180°)
+			  "<circle cx='110' cy='115' r='75' fill='none' stroke='#E8E4DC' stroke-width='14'" &
+			  " stroke-dasharray='" & _H & " " & _H & "' transform='rotate(180 110 115)'/>" &
+			
+			  -- Colored fill arc
+			  "<circle cx='110' cy='115' r='75' fill='none' stroke='" & _Arc & "' stroke-width='14'" &
+			  " stroke-dasharray='" & _Fill & " 999' stroke-linecap='round'" &
+			  " transform='rotate(180 110 115)'/>" &
+			
+			  -- White tick at 100% position (30° from right = upper-right of arc)
+			  "<line x1='169' y1='81' x2='181' y2='74' stroke='white' stroke-width='2.5'/>" &
+			
+			  -- Percentage value
+			  "<text x='110' y='92' text-anchor='middle' font-size='26' font-weight='700'" &
+			  " fill='" & _Arc & "'>" & _Txt & "</text>" &
+			
+			  -- Status pill
+			  "<rect x='57' y='97' width='106' height='18' rx='9' fill='" & _PillBg & "'/>" &
+			  "<text x='110' y='110' text-anchor='middle' font-size='9'" &
+			  " fill='" & _PillFg & "' font-weight='600'>● " & _Status & "</text>" &
+			
+			  -- Axis labels: 0% left · 100% upper-right · 120% right
+			  "<text x='18'  y='124' text-anchor='middle' font-size='8.5' fill='#bbb'>0%</text>"  &
+			  "<text x='183' y='62'  text-anchor='middle' font-size='8.5' fill='#bbb'>100%</text>" &
+			  "<text x='202' y='124' text-anchor='middle' font-size='8.5' fill='#bbb'>120%</text>" &
+			
+			"</svg></div>" &
+			"<p style='font-size:10px;color:#aaa;text-align:center;margin:0'>" &
+			"of 2024 revenue target — AED 10.6M</p>" &
+			"</div>"
+			```
+		lineageTag: 991594ac-5962-4007-8f0d-2f7ca049fed6
+
+	measure 'KPI HTML - Distributor Performance' = ```
+			
+			
+			-- ① Base data
+			VAR _All =
+			    ADDCOLUMNS(
+			        VALUES('Fact'[distributor_name]),         
+			        "@Rev", [Revenue (Current Year)]
+			    )
+			
+			VAR _MaxRev   = MAXX(_All, [@Rev])
+			VAR _MaxBarPx = 200
+			
+			-- ② Top 5
+			VAR _Top5 = TOPN(5, _All, [@Rev], DESC)
+			
+			VAR _Top5HTML =
+			    CONCATENATEX(
+			        _Top5,
+			        VAR _rank = RANKX(_Top5, [@Rev],, DESC, Dense)
+			        VAR _barW = DIVIDE([@Rev], _MaxRev) * _MaxBarPx
+			        VAR _fmt  = IF([@Rev] >= 1000000,
+			                       FORMAT([@Rev] / 1000000, "0.00") & "M",
+			                       FORMAT([@Rev] / 1000, "#,0") & "K")
+			        RETURN
+			        "<div style='display:flex;align-items:center;gap:6px;margin-bottom:7px'>" &
+			          "<span style='color:#aaa;font-size:10px;min-width:10px;text-align:right'>" & _rank & "</span>" &
+			          "<span style='flex:1;font-size:11px;color:#333;white-space:nowrap;overflow:hidden'>"
+			              & 'Fact'[distributor_name] & "</span>" &          -- ← REPLACE column
+			          "<div style='width:" & _MaxBarPx & "px;background:#EDEBE5;border-radius:3px;height:5px;flex-shrink:0'>" &
+			            "<div style='background:#C4C0B8;width:" & _barW & "px;height:5px;border-radius:3px'></div>" &
+			          "</div>" &
+			          "<span style='font-size:10px;color:#333;min-width:50px;text-align:right'>" & _fmt & "</span>" &
+			        "</div>",
+			        "",
+			        [@Rev], DESC
+			    )
+			
+			-- ③ Bottom 4 (remaining, ranked worst first)
+			VAR _Bottom4 = TOPN(4, _All, [@Rev], ASC)
+			
+			VAR _Bottom4HTML =
+			    CONCATENATEX(
+			        _Bottom4,
+			        VAR _rank = RANKX(_Bottom4, [@Rev],, ASC, Dense)
+			        VAR _barW = DIVIDE([@Rev], _MaxRev) * _MaxBarPx
+			        VAR _fmt  = IF([@Rev] >= 1000000,
+			                       FORMAT([@Rev] / 1000000, "0.00") & "M",
+			                       FORMAT([@Rev] / 1000, "#,0") & "K")
+			        RETURN
+			        "<div style='display:flex;align-items:center;gap:6px;margin-bottom:7px'>" &
+			          "<span style='color:#aaa;font-size:10px;min-width:10px;text-align:right'>" & _rank & "</span>" &
+			          "<span style='flex:1;font-size:11px;color:#333;white-space:nowrap;overflow:hidden'>"
+			              & 'Fact'[distributor_name] & "</span>" &          -- ← REPLACE column
+			          "<div style='width:" & _MaxBarPx & "px;background:#EDEBE5;border-radius:3px;height:5px;flex-shrink:0'>" &
+			            "<div style='background:#C4C0B8;width:" & _barW & "px;height:5px;border-radius:3px'></div>" &
+			          "</div>" &
+			          "<span style='font-size:10px;color:#333;min-width:50px;text-align:right'>" & _fmt & "</span>" &
+			        "</div>",
+			        "",
+			        [@Rev], ASC
+			    )
+			
+			RETURN
+			"<div style='
+			font-family:Segoe UI,sans-serif;
+			padding:20px;
+			background:#FFFFFF;
+			border-radius:18px;
+			height:100%;
+			box-sizing:border-box;
+			'>" &
+			
+			  "<div style='display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px'>" &
+			    "<span style='font-size:10px;font-weight:700;letter-spacing:1px;color:#222'>DISTRIBUTOR PERFORMANCE</span>" &
+			    "<span style='font-size:10px;color:#aaa'>Sales value · AED</span>" &
+			  "</div>" &
+			
+			  "<div style='font-size:9px;font-weight:700;letter-spacing:0.5px;color:#1A5C5A;margin-bottom:8px'>▲ TOP 5 PERFORMERS</div>" &
+			  _Top5HTML &
+			
+			  "<div style='font-size:9px;font-weight:700;letter-spacing:0.5px;color:#8B1A1A;margin:12px 0 8px'>▼ BOTTOM 4 · ACTION REQUIRED</div>" &
+			  _Bottom4HTML &
+			
+			"</div>"
+			```
+		lineageTag: 61425a98-68f4-4bd4-b58f-8cda8f9cf4a7
+
+	measure 'KPI HTML - Revenue Trend' = ```
+			
+			
+			VAR _YoY    = [Revenue YoY %]
+			VAR _Sign   = IF(_YoY >= 0, "+", "")
+			VAR _YoYTxt = _Sign & FORMAT(_YoY * 100, "0.0") & "% YoY"
+			VAR _YoYBg  = IF(_YoY >= 0, "#E3EEE0", "#FCEAEA")
+			VAR _YoYFg  = IF(_YoY >= 0, "#1A5C5A", "#8B1A1A")
+			
+			-- Chart canvas
+			VAR _W     = 540   VAR _H     = 240
+			VAR _PadL  = 38    VAR _PadR  = 8
+			VAR _PadT  = 6     VAR _PadB  = 18
+			VAR _PlotW = _W - _PadL - _PadR
+			VAR _PlotH = _H - _PadT - _PadB
+			VAR _XStep = DIVIDE(_PlotW, 11)
+			
+			-- Monthly revenue  ← REPLACE table/columns below
+			
+			VAR _Data =
+			    ADDCOLUMNS(
+			        GENERATESERIES(1,12,1),
+			
+			        "@R24",
+			        VAR _Month = [Value]
+			        RETURN
+			        CALCULATE(
+			            SUM('Fact'[Sales Amount]),
+			            FILTER(
+			                ALL('Dim_Date'),
+			                'Dim_Date'[year] = 2024 &&
+			                'Dim_Date'[month] = _Month
+			            )
+			        ),
+			
+			        "@R23",
+			        VAR _Month2 = [Value]
+			        RETURN
+			        CALCULATE(
+			            SUM('Fact'[Sales Amount]),
+			            FILTER(
+			                ALL('Dim_Date'),
+			                'Dim_Date'[year] = 2023 &&
+			                'Dim_Date'[month] = _Month2
+			            )
+			        )
+			    )
+			VAR _MaxRev = MAXX(_Data, MAX([@R24], [@R23]))
+			VAR _MinRev = MINX(_Data, MIN([@R24], [@R23])) * 0.92   -- small padding below min
+			
+			-- SVG polyline point helpers
+			VAR _Pts24 =
+			    CONCATENATEX(
+			        _Data,
+			        VAR _x = _PadL + ([Value] - 1) * _XStep
+			        VAR _y = _PadT + _PlotH
+			              - DIVIDE(IF(ISBLANK([@R24]), _MinRev, [@R24]) - _MinRev, _MaxRev - _MinRev) * _PlotH
+			        RETURN FORMAT(_x, "0.0") & "," & FORMAT(_y, "0.0"),
+			        " ", [Value], ASC
+			    )
+			
+			VAR _Pts23 =
+			    CONCATENATEX(
+			        _Data,
+			        VAR _x = _PadL + ([Value] - 1) * _XStep
+			        VAR _y = _PadT + _PlotH
+			              - DIVIDE(IF(ISBLANK([@R23]), _MinRev, [@R23]) - _MinRev, _MaxRev - _MinRev) * _PlotH
+			        RETURN FORMAT(_x, "0.0") & "," & FORMAT(_y, "0.0"),
+			        " ", [Value], ASC
+			    )
+			
+			-- Closed polygon for area fill
+			VAR _BottomY = FORMAT(_PadT + _PlotH, "0")
+			VAR _AreaPts = _Pts24
+			    & " " & FORMAT(_PadL + 11 * _XStep, "0") & "," & _BottomY
+			    & " " & FORMAT(_PadL, "0")                & "," & _BottomY
+			
+			-- December dot
+			VAR _Dec24 = CALCULATE(SUM('Fact'[Sales Amount]), 'Dim_Date'[year]=2024, 'Dim_Date'[month]=12)  
+			VAR _DotX  = _PadL + 11 * _XStep
+			VAR _DotY  = _PadT + _PlotH
+			           - DIVIDE(IF(ISBLANK(_Dec24), _MinRev, _Dec24) - _MinRev, _MaxRev - _MinRev) * _PlotH
+			
+			-- Y-axis labels
+			VAR _MaxFmt = IF(_MaxRev>=1000000, FORMAT(_MaxRev/1000000,"0.#")&"M", FORMAT(_MaxRev/1000,"#,0")&"K")
+			VAR _MinFmt = IF(_MinRev>=1000000, FORMAT(_MinRev/1000000,"0.#")&"M", FORMAT(_MinRev/1000,"#,0")&"K")
+			
+			-- Month labels
+			VAR _MonthLbls =
+			    CONCATENATEX(
+			        GENERATESERIES(1, 12, 1),
+			        VAR _x  = _PadL + ([Value] - 1) * _XStep
+			        VAR _lbl = SWITCH([Value],1,"Jan",2,"Feb",3,"Mar",4,"Apr",5,"May",6,"Jun",
+			                          7,"Jul",8,"Aug",9,"Sep",10,"Oct",11,"Nov",12,"Dec")
+			        RETURN
+			        "<text x='" & FORMAT(_x,"0") & "' y='" & FORMAT(_PadT + _PlotH + 12,"0") & "'" &
+			        " text-anchor='middle' font-size='7.5' fill='#bbb'>" & _lbl & "</text>",
+			        "", [Value], ASC
+			    )
+			
+			RETURN
+			"<div style='
+			font-family:Segoe UI,sans-serif;
+			padding:20px;
+			background:#FFFFFF;
+			border-radius:18px;
+			height:100%;
+			box-sizing:border-box;
+			'>" &
+			
+			  "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px'>" &
+			    "<span style='font-size:10px;font-weight:700;letter-spacing:1px;color:#222'>REVENUE TREND · MONTH OVER MONTH</span>" &
+			    "<span style='background:" & _YoYBg & ";color:" & _YoYFg & ";font-size:9px;font-weight:700;padding:3px 9px;border-radius:10px'>"
+			        & _YoYTxt & "</span>" &
+			  "</div>" &
+			
+			  "<svg width='" & _W & "' height='" & _H & "' viewBox='0 0 " & _W & " " & _H & "'>" &
+			
+			    -- Baseline + left axis
+			    "<line x1='" & _PadL & "' y1='" & _PadT & "' x2='" & _PadL & "' y2='" & (_PadT+_PlotH) &
+			    "' stroke='#E8E4DC' stroke-width='1'/>" &
+			    "<line x1='" & _PadL & "' y1='" & (_PadT+_PlotH) & "' x2='" & (_W-_PadR) & "' y2='" & (_PadT+_PlotH) &
+			    "' stroke='#E8E4DC' stroke-width='1'/>" &
+			
+			    -- Y labels
+			    "<text x='" & (_PadL-4) & "' y='" & (_PadT+4) & "' text-anchor='end' font-size='8' fill='#bbb'>" & _MaxFmt & "</text>" &
+			    "<text x='" & (_PadL-4) & "' y='" & (_PadT+_PlotH) & "' text-anchor='end' font-size='8' fill='#bbb'>" & _MinFmt & "</text>" &
+			
+			    -- Area fill under 2024 line
+			    "<polygon points='" & _AreaPts & "' fill='#1A5C5A' fill-opacity='0.07'/>" &
+			
+			    -- 2023 dashed line
+			    "<polyline points='" & _Pts23 & "' fill='none' stroke='#C8C4BC' stroke-width='1.5' stroke-dasharray='4 3'/>" &
+			
+			    -- 2024 solid line
+			    "<polyline points='" & _Pts24 & "' fill='none' stroke='#1A5C5A' stroke-width='2'/>" &
+			
+			    -- December 2024 endpoint dot
+			    "<circle cx='" & FORMAT(_DotX,"0") & "' cy='" & FORMAT(_DotY,"0.0") & "' r='4' fill='#1A5C5A'/>" &
+			
+			    -- Month labels
+			    _MonthLbls &
+			
+			  "</svg>" &
+			
+			  -- Legend
+			  "<div style='display:flex;gap:16px;margin-top:5px'>" &
+			    "<div style='display:flex;align-items:center;gap:5px;font-size:9px;color:#555'>" &
+			      "<svg width='18' height='8'><line x1='0' y1='4' x2='18' y2='4' stroke='#1A5C5A' stroke-width='2'/></svg>" &
+			      "2024 (current)</div>" &
+			    "<div style='display:flex;align-items:center;gap:5px;font-size:9px;color:#999'>" &
+			      "<svg width='18' height='8'><line x1='0' y1='4' x2='18' y2='4' stroke='#C8C4BC'" &
+			      " stroke-width='1.5' stroke-dasharray=""4 2""/></svg>" &
+			      "2023 (prior year)</div>" &
+			  "</div>" &
+			
+			"</div>"
+			```
+		lineageTag: b9a07c75-835c-4dd0-b2f3-89c6a9b1d99f
 
 	column Column1
 		dataType: string

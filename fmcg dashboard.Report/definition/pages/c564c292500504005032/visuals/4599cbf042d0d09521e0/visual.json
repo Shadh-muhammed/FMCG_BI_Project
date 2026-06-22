@@ -1,13 +1,13 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
-  "name": "13efa7314c007a38dcbb",
+  "name": "4599cbf042d0d09521e0",
   "position": {
-    "x": 639.336625815499,
-    "y": 0,
-    "z": 1000,
-    "height": 163.16403471333049,
-    "width": 311.3436172591102,
-    "tabOrder": 1000
+    "x": 644.33144320468261,
+    "y": 492.82198239944717,
+    "z": 4000,
+    "height": 221.43690425380566,
+    "width": 636.00674755604325,
+    "tabOrder": 4000
   },
   "visual": {
     "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
@@ -23,57 +23,72 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "KPI HTML - Outlet Coverage"
+                  "Property": "KPI HTML - CD Health Score"
                 }
               },
-              "queryRef": "_Measures.KPI HTML - Outlet Coverage",
-              "nativeQueryRef": "KPI HTML - Outlet Coverage"
+              "queryRef": "_Measures.KPI HTML - CD Health Score",
+              "nativeQueryRef": "KPI HTML - CD Health Score"
             }
           ]
         }
       }
     },
     "visualContainerObjects": {
-      "dropShadow": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "position": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Inner'"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "visualHeader": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ],
       "title": [
         {
           "properties": {
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "''"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "subTitle": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'CD HEALTH SCORE'"
+                }
+              }
+            },
+            "bold": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "9D"
                 }
               }
             }
@@ -86,7 +101,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
+                  "Value": "true"
                 }
               }
             }
