@@ -1,13 +1,13 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
-  "name": "8ecb98bc396ad994354e",
+  "name": "0007dd77790285b31521",
   "position": {
-    "x": 950.68024307460928,
+    "x": 640.27380129660719,
     "y": 0,
-    "z": 2000,
-    "height": 163.16403471333049,
-    "width": 329.6579476861167,
-    "tabOrder": 2000
+    "z": 2,
+    "height": 163.10132622503045,
+    "width": 330.24648698456576,
+    "tabOrder": 2
   },
   "visual": {
     "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
@@ -23,11 +23,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "KPI HTML - Revenue"
+                  "Property": "KPI HTML - E-Commerce Growth %"
                 }
               },
-              "queryRef": "_Measures.KPI HTML - Revenue",
-              "nativeQueryRef": "KPI HTML - Revenue"
+              "queryRef": "_Measures.KPI HTML - E-Commerce Growth %",
+              "nativeQueryRef": "KPI HTML - E-Commerce Growth %"
             }
           ]
         }
@@ -35,6 +35,19 @@
     },
     "visualContainerObjects": {
       "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
         {
           "properties": {
             "show": {

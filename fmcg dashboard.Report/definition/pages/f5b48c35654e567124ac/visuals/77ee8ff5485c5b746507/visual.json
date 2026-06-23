@@ -1,13 +1,13 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
-  "name": "8ecb98bc396ad994354e",
+  "name": "77ee8ff5485c5b746507",
   "position": {
-    "x": 950.68024307460928,
-    "y": 0,
-    "z": 2000,
-    "height": 163.16403471333049,
-    "width": 329.6579476861167,
-    "tabOrder": 2000
+    "x": 653.75324974495675,
+    "y": 163.10132622503045,
+    "z": 6,
+    "height": 419.2108467436733,
+    "width": 626.79435284825752,
+    "tabOrder": 6
   },
   "visual": {
     "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
@@ -23,30 +23,15 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "KPI HTML - Revenue"
+                  "Property": "HTML - Stock Availability vs Sales Velocity"
                 }
               },
-              "queryRef": "_Measures.KPI HTML - Revenue",
-              "nativeQueryRef": "KPI HTML - Revenue"
+              "queryRef": "_Measures.HTML - Stock Availability vs Sales Velocity",
+              "nativeQueryRef": "HTML - Stock Availability vs Sales Velocity"
             }
           ]
         }
       }
-    },
-    "visualContainerObjects": {
-      "background": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ]
     },
     "drillFilterOtherVisuals": true
   }

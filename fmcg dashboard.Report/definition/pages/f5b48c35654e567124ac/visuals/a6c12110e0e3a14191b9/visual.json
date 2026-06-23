@@ -1,13 +1,13 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
-  "name": "8ecb98bc396ad994354e",
+  "name": "a6c12110e0e3a14191b9",
   "position": {
-    "x": 950.68024307460928,
+    "x": 0,
     "y": 0,
-    "z": 2000,
-    "height": 163.16403471333049,
-    "width": 329.6579476861167,
-    "tabOrder": 2000
+    "z": 0,
+    "height": 163.10132622503045,
+    "width": 304.63553493270149,
+    "tabOrder": 0
   },
   "visual": {
     "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
@@ -23,11 +23,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "KPI HTML - Revenue"
+                  "Property": "KPI HTML - Numeric Distribution %"
                 }
               },
-              "queryRef": "_Measures.KPI HTML - Revenue",
-              "nativeQueryRef": "KPI HTML - Revenue"
+              "queryRef": "_Measures.KPI HTML - Numeric Distribution",
+              "nativeQueryRef": "KPI HTML - Numeric Distribution %"
             }
           ]
         }
@@ -35,6 +35,19 @@
     },
     "visualContainerObjects": {
       "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
         {
           "properties": {
             "show": {

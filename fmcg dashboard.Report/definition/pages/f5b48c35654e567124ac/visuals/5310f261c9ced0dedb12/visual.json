@@ -1,13 +1,13 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
-  "name": "8ecb98bc396ad994354e",
+  "name": "5310f261c9ced0dedb12",
   "position": {
-    "x": 950.68024307460928,
+    "x": 304.63553493270149,
     "y": 0,
-    "z": 2000,
-    "height": 163.16403471333049,
-    "width": 329.6579476861167,
-    "tabOrder": 2000
+    "z": 1,
+    "height": 163.10132622503045,
+    "width": 335.63826636390564,
+    "tabOrder": 1
   },
   "visual": {
     "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
@@ -23,11 +23,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "KPI HTML - Revenue"
+                  "Property": "KPI HTML - Stock Out Rate %"
                 }
               },
-              "queryRef": "_Measures.KPI HTML - Revenue",
-              "nativeQueryRef": "KPI HTML - Revenue"
+              "queryRef": "_Measures.KPI HTML - Stock Out Rate %",
+              "nativeQueryRef": "KPI HTML - Stock Out Rate %"
             }
           ]
         }
@@ -35,6 +35,19 @@
     },
     "visualContainerObjects": {
       "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
         {
           "properties": {
             "show": {

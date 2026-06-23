@@ -1,13 +1,13 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
-  "name": "8ecb98bc396ad994354e",
+  "name": "b2d3181ed6d625a1a005",
   "position": {
-    "x": 950.68024307460928,
+    "x": 970.520288281173,
     "y": 0,
-    "z": 2000,
-    "height": 163.16403471333049,
-    "width": 329.6579476861167,
-    "tabOrder": 2000
+    "z": 3,
+    "height": 163.10132622503045,
+    "width": 310.02731431204137,
+    "tabOrder": 3
   },
   "visual": {
     "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
@@ -23,11 +23,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "KPI HTML - Revenue"
+                  "Property": "KPI HTML - Avg Delivery Days"
                 }
               },
-              "queryRef": "_Measures.KPI HTML - Revenue",
-              "nativeQueryRef": "KPI HTML - Revenue"
+              "queryRef": "_Measures.KPI HTML - Avg Per Outlet",
+              "nativeQueryRef": "KPI HTML - Avg Delivery Days"
             }
           ]
         }

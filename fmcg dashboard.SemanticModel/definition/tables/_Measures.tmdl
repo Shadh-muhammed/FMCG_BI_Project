@@ -210,24 +210,68 @@ table _Measures
 			"</div>"
 		lineageTag: 9f26d9ea-f3c6-47ff-a38e-bcd1d759acbe
 
-	measure 'KPI HTML - Avg Per Outlet' =
+	measure 'KPI HTML - Avg Delivery Days' =
 			
-			VAR _Avg      = [Avg Revenue per Outlet 2024]
-			VAR _PriorAvg = DIVIDE ( [Total Revenue 2023], CALCULATE ( DISTINCTCOUNT ( Fact[outlet_id] ), Dim_Date[year] = 2023 ), 0 )
-			VAR _Delta    = DIVIDE ( _Avg - _PriorAvg, _PriorAvg, 0 )
-			VAR _Color    = IF ( _Delta >= 0, "#2C5C3C", "#8C2E20" )
-			VAR _Bg       = IF ( _Delta >= 0, "#E7F2EB", "#F8E8E4" )
-			VAR _Sign     = IF ( _Delta >= 0, "+", "-" )
+			VAR _Avg = [Avg Delivery Days]
+			VAR _Target = 3.4
+			VAR _Diff = _Avg - _Target
+			
+			VAR _Color =
+			    IF ( _Diff >= 0, "#C27C00", "#2C5C3C" )
+			
+			VAR _Bg =
+			    IF ( _Diff >= 0, "#F7E8B5", "#E7F2EB" )
+			
+			VAR _Sign =
+			    IF ( _Diff >= 0, "+", "-" )
+			
 			RETURN
-			"<div style='font-family:Segoe UI,Arial,sans-serif;background:#FFFFFF;border-top:3px solid #9B870C;
-			border-radius:10px;padding:16px 18px;height:90%;box-sizing:border-box;'>" &
-			"<div style='font-size:10px;font-weight:700;letter-spacing:1px;color:#67726C;text-transform:uppercase;
-			margin-bottom:8px;'>AVG REVENUE / OUTLET</div>" &
-			"<div style='font-size:28px;font-weight:700;color:#1C2624;line-height:1;'>AED " & FORMAT ( _Avg, "#,##0," ) & "K</div>" &
-			"<div style='font-size:11px;color:#67726C;margin:8px 0 10px;'>annualised, 2024</div>" &
-			"<div style='display:inline-block;font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;
-			background:" & _Bg & ";color:" & _Color & ";'>" & _Sign & FORMAT ( ABS ( _Delta ), "0.0%" ) & " vs 2023</div>" &
-			"</div>"
+			"<div style='font-family:Segoe UI,Arial,sans-serif;
+			background:#FFFFFF;
+			border-top:3px solid #2F5F8F;
+			border-radius:10px;
+			padding:16px 18px;
+			height:90%;
+			box-sizing:border-box;'>
+			
+			<div style='font-size:10px;
+			font-weight:700;
+			letter-spacing:1px;
+			color:#67726C;
+			text-transform:uppercase;
+			margin-bottom:8px;'>
+			AVG DELIVERY DAYS
+			</div>
+			
+			<div style='font-size:28px;
+			font-weight:700;
+			color:#1C2624;
+			line-height:1;'>" &
+			FORMAT ( _Avg, "0.0" ) &
+			" <span style='font-size:18px;font-weight:600;'>days</span>
+			</div>
+			
+			<div style='font-size:11px;
+			color:#67726C;
+			margin:8px 0 10px;'>
+			territory average, all regions
+			</div>
+			
+			<div style='display:inline-block;
+			font-size:11px;
+			font-weight:600;
+			padding:3px 9px;
+			border-radius:6px;
+			background:" & _Bg & ";
+			color:" & _Color & ";'>" &
+			_Sign &
+			FORMAT ( ABS ( _Diff ), "0.0" ) &
+			"D VS TARGET " &
+			FORMAT ( _Target, "0.0" ) &
+			"D
+			</div>
+			
+			</div>"
 		lineageTag: 4e19ff48-ebf5-423a-82e5-79a131780c62
 
 	measure 'KPI HTML - Outlet Coverage' =
@@ -664,22 +708,563 @@ table _Measures
 			```
 		lineageTag: b9a07c75-835c-4dd0-b2f3-89c6a9b1d99f
 
-	column Column1
-		dataType: string
-		lineageTag: 58a8cd9b-f39f-4372-8976-5f73eb4c75e3
-		summarizeBy: none
-		sourceColumn: Column1
+	measure 'Numeric Distribution %' =
+			
+			DIVIDE(
+			    CALCULATE(
+			        DISTINCTCOUNT(Fact[Product_id]),
+			        Fact[units_sold] > 0,
+			        'Dim_Date'[year] = 2024
+			    ),
+			    CALCULATE(
+			        DISTINCTCOUNT(Dim_Product[Product_id]),
+			        'Dim_Date'[year] = 2024
+			    )
+			)
+		lineageTag: e5840e0e-a4d4-430e-af6a-7207dd88ba5d
 
-		annotation SummarizationSetBy = Automatic
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Stock Out Rate %' =
+			
+			DIVIDE(
+			    CALCULATE(COUNTROWS('Fact'), Fact[stock_available] = 0),
+			    COUNTROWS('Fact')
+			)
+		lineageTag: e95d835c-2dda-4fb2-aeec-486be701711f
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'E-Commerce Revenue' =
+			
+			CALCULATE([Total Revenue], Dim_channel[channel] = "E-Commerce")
+		lineageTag: e01dc8c0-17af-466c-9f78-4b366cb97618
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'E-Commerce Revenue LY' =
+			
+			CALCULATE(
+			    [Total Revenue],
+			    SAMEPERIODLASTYEAR(Dim_Date[date]),
+			    Dim_channel[channel] = "E-Commerce"
+			)
+		lineageTag: 2bc4d5d2-adbe-4ca5-8f87-28f078e867c3
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'E-Commerce Growth %' =
+			
+			DIVIDE(
+			    [E-Commerce Revenue] - [E-Commerce Revenue LY],
+			    ABS([E-Commerce Revenue LY])
+			)
+		lineageTag: c8f4fd15-c69a-43fe-9b7b-fc76af6186dd
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Channel Revenue Share %' =
+			
+			DIVIDE(
+			    [Total Revenue],
+			    CALCULATE([Total Revenue], ALL(Dim_channel))
+			)
+		lineageTag: 84edae67-a0b2-4cfc-a718-492324b3649f
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Avg Delivery Days' = AVERAGE(Fact[delivery_days])
+		lineageTag: 20f6abe0-b1c3-416e-818c-97a459bc7f03
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Stock Coverage Days' =
+			
+			AVERAGEX(
+			    'Fact',
+			    DIVIDE(Fact[stock_available], Fact[units_sold]) * 7
+			)
+		lineageTag: 725c9da4-e5f1-44ab-8eb4-7873346cbaa0
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'KPI HTML - Numeric Distribution %' =
+			
+			VAR _Status     = [Numeric Distribution %]
+			VAR _PriorAvg = [Numeric Distribution % 2023]
+			VAR _Delta    = DIVIDE ( _Status - _PriorAvg, _PriorAvg, 0 )
+			VAR _Color    = IF ( _Delta >= 0, "#2C5C3C", "#8C2E20" )
+			VAR _Bg       = IF ( _Delta >= 0, "#E7F2EB", "#F8E8E4" )
+			VAR _Sign     = IF ( _Delta >= 0, "+", "-" )
+			RETURN
+			"<div style='font-family:Segoe UI,Arial,sans-serif;background:#FFFFFF;border-top:3px solid #9B870C;
+			border-radius:10px;padding:16px 18px;height:90%;box-sizing:border-box;'>"&
+			"<div style='font-size:10px;font-weight:700;letter-spacing:1px;color:#67726C;text-transform:uppercase;
+			margin-bottom:8px;'>Numeric Distribution %</div>" &
+			"<div style='font-size:28px;font-weight:700;color:" & _Color & ";line-height:1;'>" & FORMAT ( _Status, "0.0%" ) & "</div>" &
+			"<div style='font-size:11px;color:#67726C;margin:8px 0 10px;'>of total SKU universe active</div>" &
+			"<div style='display:inline-block;font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;
+			background:" & _Bg & ";color:" & _Color & ";'>" & _Sign & FORMAT ( ABS ( _Delta ), "0.0%" ) & " vs 2023</div>" &
+			"</div>"
+		lineageTag: cde2c4bf-03e9-4afa-aba2-69320ee832d2
+
+	measure 'Numeric Distribution % 2023' =
+			
+			DIVIDE(
+			    CALCULATE(
+			        DISTINCTCOUNT(Fact[Product_id]),
+			        Fact[units_sold] > 0,
+			        'Dim_Date'[year] = 2023
+			    ),
+			    CALCULATE(
+			        DISTINCTCOUNT(Dim_Product[Product_id]),
+			        'Dim_Date'[year] = 2023
+			    )
+			)
+		lineageTag: 3a5f12a5-d36c-404b-afec-ca831568c3b6
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'KPI HTML - Stock Out Rate %' = ```
+			
+			VAR _Status   = [stockout Status] 
+			VAR _AchPct   = [Stock Out Rate %]
+			VAR _Color    = SWITCH ( TRUE (), _AchPct >= 1, "#8C2E20", _AchPct >= 0.9, "#8C5C0D", "#2C5C3C" )
+			VAR _Bg       = SWITCH ( TRUE (), _AchPct >= 1, "#F8E8E4", _AchPct >= 0.9, "#FAF1DF", "#E7F2EB" )
+			VAR _Accent   = SWITCH ( TRUE (), _AchPct >= 1, "#B23E2B", _AchPct >= 0.9, "#BE7A12", "#3F7D52" )
+			RETURN
+			"<div style='font-family:Segoe UI,Arial,sans-serif;background:#FFFFFF;border-top:3px solid " & _Accent & ";
+			border-radius:10px;padding:16px 18px;height:90%;box-sizing:border-box;'>" &
+			"<div style='font-size:10px;font-weight:700;letter-spacing:1px;color:#67726C;text-transform:uppercase;
+			margin-bottom:8px;'>Stock Out Rate % </div>" &
+			"<div style='font-size:28px;font-weight:700;color:" & _Color & ";line-height:1;'>" & FORMAT ( _AchPct, "0.0%" ) & "</div>" &
+			"<div style='font-size:11px;color:#67726C;margin:8px 0 10px;'>of outlet-SKU combos with 0 stock</div>" &
+			"<div style='display:inline-block;font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;
+			background:" & _Bg & ";color:" & _Color & ";'>" & _Status & "</div>" &
+			"</div>" 
+			```
+		lineageTag: 73c20cde-9d22-44f8-8dbd-206b20b252f4
+
+	measure 'stockout Status' = ```
+			
+			SWITCH (
+			    TRUE (),
+			    [Stock Out Rate %] >= 1,    "High Risk",
+			    [Stock Out Rate %] >= 0.5,  "Moderate",
+			    "Low Risk"
+			)
+			
+			```
+		lineageTag: 155664b7-c7d8-453c-baca-7490408bacf5
+
+	measure 'KPI HTML - E-Commerce Growth %' = ```
+			
+			VAR _Status   = [E-Commerce Revenue LY] 
+			VAR _AchPct   = [E-Commerce Growth %]
+			VAR _Color    = SWITCH ( TRUE (), _AchPct >= 1, "#8C2E20", _AchPct >= 0.9, "#8C5C0D", "#2C5C3C" )
+			VAR _Bg       = SWITCH ( TRUE (), _AchPct >= 1, "#F8E8E4", _AchPct >= 0.9, "#FAF1DF", "#E7F2EB" )
+			VAR _Accent   = SWITCH ( TRUE (), _AchPct >= 1, "#B23E2B", _AchPct >= 0.9, "#BE7A12", "#3F7D52" )
+			RETURN
+			"<div style='font-family:Segoe UI,Arial,sans-serif;background:#FFFFFF;border-top:3px solid " & _Accent & ";
+			border-radius:10px;padding:16px 18px;height:90%;box-sizing:border-box;'>" &
+			"<div style='font-size:10px;font-weight:700;letter-spacing:1px;color:#67726C;text-transform:uppercase;
+			margin-bottom:8px;'>E-Commerce Growth </div>" &
+			"<div style='font-size:28px;font-weight:700;color:" & _Color & ";line-height:1;'>" & FORMAT ( _AchPct, "0.0%" ) & "</div>" &
+			"<div style='font-size:11px;color:#67726C;margin:8px 0 10px;'>YoY revenue growth 2023→2024</div>" &
+			"<div style='display:inline-block;font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;
+			background:" & _Bg & ";color:" & _Color & ";'>" & _Status & "</div>" &
+			"</div>" 
+			```
+		lineageTag: 8a760777-0795-4981-9121-07cc0df0750c
+
+	measure 'Channel Revenue Share % Label' =
+			
+			FORMAT([Channel Revenue Share %], "0.0%")
+		lineageTag: 36bda19b-332e-4131-8c16-6c163f1a6026
+
+	measure 'HTML - Revenue By Channel Region' = ```
+			
+			
+			VAR CentralRetail =
+			    CALCULATE(
+			        SUM(Fact[Sales Amount]),
+			        Fact[region] = "PL-Central",
+			        Fact[channel] = "Retail",
+			        Dim_Date[year] = 2024
+			    )
+			VAR CentralDiscount =
+			    CALCULATE(
+			        SUM(Fact[Sales Amount]),
+			        Fact[region] = "PL-Central",
+			        Fact[channel] = "Discount",
+			        Dim_Date[year] = 2024
+			    )
+			VAR CentralEcom =
+			    CALCULATE(
+			        SUM(Fact[Sales Amount]),
+			        Fact[region] = "PL-Central",
+			        Fact[channel] = "E-Commerce",
+			        Dim_Date[year] = 2024
+			    )
+			VAR CentralTotal = CentralRetail + CentralDiscount + CentralEcom
+			
+			VAR NorthRetail =
+			    CALCULATE(
+			        SUM(Fact[Sales Amount]),
+			        Fact[region] = "PL-North",
+			        Fact[channel] = "Retail",
+			        Dim_Date[year] = 2024
+			    )
+			VAR NorthDiscount =
+			    CALCULATE(
+			        SUM(Fact[Sales Amount]),
+			        Fact[region] = "PL-North",
+			        Fact[channel] = "Discount",
+			        Dim_Date[year] = 2024
+			    )
+			VAR NorthEcom =
+			    CALCULATE(
+			        SUM(Fact[Sales Amount]),
+			        Fact[region] = "PL-North",
+			        Fact[channel] = "E-Commerce",
+			        Dim_Date[year] = 2024
+			    )
+			VAR NorthTotal = NorthRetail + NorthDiscount + NorthEcom
+			
+			VAR SouthRetail =
+			    CALCULATE(
+			        SUM(Fact[Sales Amount]),
+			        Fact[region] = "PL-South",
+			        Fact[channel] = "Retail",
+			        Dim_Date[year] = 2024
+			    )
+			VAR SouthDiscount =
+			    CALCULATE(
+			        SUM(Fact[Sales Amount]),
+			        Fact[region] = "PL-South",
+			        Fact[channel] = "Discount",
+			        Dim_Date[year] = 2024
+			    )
+			VAR SouthEcom =
+			    CALCULATE(
+			        SUM(Fact[Sales Amount]),
+			        Fact[region] = "PL-South",
+			        Fact[channel] = "E-Commerce",
+			        Dim_Date[year] = 2024
+			    )
+			VAR SouthTotal = SouthRetail + SouthDiscount + SouthEcom
+			
+			-- Max region total → used to scale all bars proportionally
+			VAR MaxVal = MAXX( { CentralTotal, NorthTotal, SouthTotal }, [Value] )
+			
+			-- Max bar width in pixels (adjust if your visual is wider/narrower)
+			VAR BarWidth = 280
+			
+			-- Bar segment widths as integers
+			VAR CR = INT( DIVIDE(CentralRetail,  MaxVal) * BarWidth )
+			VAR CD = INT( DIVIDE(CentralDiscount, MaxVal) * BarWidth )
+			VAR CE = INT( DIVIDE(CentralEcom,    MaxVal) * BarWidth )
+			
+			VAR NR = INT( DIVIDE(NorthRetail,    MaxVal) * BarWidth )
+			VAR ND = INT( DIVIDE(NorthDiscount,  MaxVal) * BarWidth )
+			VAR NE = INT( DIVIDE(NorthEcom,      MaxVal) * BarWidth )
+			
+			VAR SR = INT( DIVIDE(SouthRetail,    MaxVal) * BarWidth )
+			VAR SD = INT( DIVIDE(SouthDiscount,  MaxVal) * BarWidth )
+			VAR SE = INT( DIVIDE(SouthEcom,      MaxVal) * BarWidth )
+			
+			-- Dynamic insight: find region with highest E-Commerce share
+			VAR CentralEcomShare = DIVIDE(CentralEcom, CentralTotal)
+			VAR NorthEcomShare   = DIVIDE(NorthEcom,   NorthTotal)
+			VAR SouthEcomShare   = DIVIDE(SouthEcom,   SouthTotal)
+			
+			VAR TopEcomRegion =
+			    SWITCH(
+			        TRUE(),
+			        CentralEcomShare >= NorthEcomShare && CentralEcomShare >= SouthEcomShare, "Central",
+			        NorthEcomShare   >= SouthEcomShare, "North",
+			        "South"
+			    )
+			VAR TopEcomShare =
+			    SWITCH(
+			        TopEcomRegion,
+			        "Central", CentralEcomShare,
+			        "North",   NorthEcomShare,
+			        SouthEcomShare
+			    )
+			
+			RETURN
+			
+			"<div style='font-family:Segoe UI,Arial,sans-serif;
+			padding:16px 18px;
+			background:#FFFFFF;
+			border-radius:10px;
+			height:90%;
+			box-sizing:border-box;'>
+			
+			<div style='display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px;'>
+			<span style='font-size:10px;font-weight:700;letter-spacing:1px;color:#222;text-transform:uppercase;'>Revenue by Channel · per Region</span>
+			<span style='font-size:10px;color:#aaa;'>Sales value — AED</span>
+			</div>
+			
+			<div style='display:flex;align-items:center;margin-bottom:10px;'>
+			<div style='width:52px;font-size:11px;color:#333;font-weight:500;'>Central</div>
+			<div style='display:flex;height:14px;border-radius:2px;overflow:hidden;background:#f0f0f0;'>
+			<div style='width:" & CR & "px;background:#1F6B4A;'></div>
+			<div style='width:" & CD & "px;background:#3F8DB5;'></div>
+			<div style='width:" & CE & "px;background:#D5B314;'></div>
+			</div>
+			<div style='margin-left:8px;font-size:11px;font-weight:700;color:#222;'>"
+			& FORMAT(CentralTotal / 1000000, "0.0") & "M</div>
+			</div>
+			
+			<div style='display:flex;align-items:center;margin-bottom:10px;'>
+			<div style='width:52px;font-size:11px;color:#333;font-weight:500;'>North</div>
+			<div style='display:flex;height:14px;border-radius:2px;overflow:hidden;background:#f0f0f0;'>
+			<div style='width:" & NR & "px;background:#1F6B4A;'></div>
+			<div style='width:" & ND & "px;background:#3F8DB5;'></div>
+			<div style='width:" & NE & "px;background:#D5B314;'></div>
+			</div>
+			<div style='margin-left:8px;font-size:11px;font-weight:700;color:#222;'>"
+			& FORMAT(NorthTotal / 1000000, "0.0") & "M</div>
+			</div>
+			
+			<div style='display:flex;align-items:center;margin-bottom:16px;'>
+			<div style='width:52px;font-size:11px;color:#333;font-weight:500;'>South</div>
+			<div style='display:flex;height:14px;border-radius:2px;overflow:hidden;background:#f0f0f0;'>
+			<div style='width:" & SR & "px;background:#1F6B4A;'></div>
+			<div style='width:" & SD & "px;background:#3F8DB5;'></div>
+			<div style='width:" & SE & "px;background:#D5B314;'></div>
+			</div>
+			<div style='margin-left:8px;font-size:11px;font-weight:700;color:#222;'>"
+			& FORMAT(SouthTotal / 1000000, "0.0") & "M</div>
+			</div>
+			
+			<div style='display:flex;gap:16px;font-size:10px;color:#555;margin-bottom:12px;'>
+			<span><span style='color:#1F6B4A;font-size:13px;'>■</span> Retail</span>
+			<span><span style='color:#3F8DB5;font-size:13px;'>■</span> Discount</span>
+			<span><span style='color:#D5B314;font-size:13px;'>■</span> E-Commerce</span>
+			</div>
+			
+			<div style='border:1px solid #C3E0CC;background:#EDF7EF;padding:6px 9px;
+			font-size:10px;border-radius:4px;color:#2E6D48;font-weight:500;'>
+			📌 E-Commerce highest share in " & TopEcomRegion & " (" &
+			FORMAT(TopEcomShare, "0%") &
+			") — signals digital-first behaviour shift
+			</div>
+			
+			</div>"
+			
+			```
+		lineageTag: 703bbb86-e73c-4b00-baa3-05502422bcb2
+
+	measure 'Revenue AED' =
+			
+			SUM ( 'Fact'[Sales Amount] )
+		lineageTag: c319c06a-3e17-40dc-80a9-62a70abbebad
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Revenue - Retail' =
+			
+			CALCULATE (
+			    [Revenue AED],
+			    Dim_channel[channel] = "Retail"
+			)
+		lineageTag: 8e2a0c49-11ff-434f-8d4c-29b69073e4e5
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Revenue - Discount' =
+			
+			CALCULATE (
+			    [Revenue AED],
+			    Dim_channel[channel] = "Discount"
+			)
+		lineageTag: 23305518-e17d-49f2-8058-115cc1bba5ed
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Revenue - E-Commerce' =
+			
+			CALCULATE (
+			    [Revenue AED],
+			    Dim_channel[channel] = "E-Commerce"
+			)
+		lineageTag: e6e43a2c-0b00-4eb8-bd08-1a5b882b4415
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'HTML - Stock Availability vs Sales Velocity' = ```
+			
+			
+			-- Summarise one row per SKU: avg stock available + total units sold for 2024
+			VAR _Data =
+			    ADDCOLUMNS(
+			        SUMMARIZE('Fact', Fact[sku]),
+			        "@Stock", CALCULATE(AVERAGE(Fact[stock_available]), Dim_Date[year] = 2024),
+			        "@Sales", CALCULATE(SUM(Fact[units_sold]),          Dim_Date[year] = 2024)
+			    )
+			
+			-- Remove any SKUs with no 2024 data
+			VAR _Clean =
+			    FILTER(_Data, NOT ISBLANK([@Stock]) && NOT ISBLANK([@Sales]) && [@Sales] > 0)
+			
+			-- Axis bounds
+			VAR _MaxStock = MAXX(_Clean, [@Stock])
+			VAR _MaxSales = MAXX(_Clean, [@Sales])
+			
+			-- Quadrant midpoints (average of each axis)
+			VAR _AvgStock = AVERAGEX(_Clean, [@Stock])
+			VAR _AvgSales = AVERAGEX(_Clean, [@Sales])
+			
+			-- SVG canvas
+			VAR _W    = 380
+			VAR _H    = 210
+			VAR _PadL = 42
+			VAR _PadR = 10
+			VAR _PadT = 24
+			VAR _PadB = 28
+			VAR _PlotW = _W - _PadL - _PadR
+			VAR _PlotH = _H - _PadT - _PadB
+			
+			-- Quadrant divider pixel positions
+			VAR _QX = _PadL + INT(DIVIDE(_AvgSales, _MaxSales) * _PlotW)
+			VAR _QY = _PadT + INT(_PlotH - DIVIDE(_AvgStock, _MaxStock) * _PlotH)
+			
+			-- Y-axis tick labels
+			VAR _YMax = IF(_MaxStock >= 1000, FORMAT(_MaxStock/1000,"0.0") & "K", FORMAT(_MaxStock,"0"))
+			VAR _YMid = IF(_AvgStock >= 1000, FORMAT(_AvgStock/1000,"0.0") & "K", FORMAT(_AvgStock,"0"))
+			
+			-- X-axis tick labels
+			VAR _XMax = IF(_MaxSales >= 1000, FORMAT(_MaxSales/1000,"0.0") & "K", FORMAT(_MaxSales,"0"))
+			VAR _XMid = IF(_AvgSales >= 1000, FORMAT(_AvgSales/1000,"0.0") & "K", FORMAT(_AvgSales,"0"))
+			
+			-- Generate one SVG circle per SKU
+			VAR _Dots =
+			    CONCATENATEX(
+			        _Clean,
+			        VAR _cx = _PadL + INT(DIVIDE([@Sales], _MaxSales) * _PlotW)
+			        VAR _cy = _PadT + INT(_PlotH - DIVIDE([@Stock], _MaxStock) * _PlotH)
+			        VAR _clr =
+			            SWITCH(
+			                TRUE(),
+			                [@Stock] >= _AvgStock && [@Sales] >= _AvgSales, "#1B9E75",  -- Healthy
+			                [@Stock] <  _AvgStock && [@Sales] >= _AvgSales, "#E74C3C",  -- Stockout risk
+			                [@Stock] >= _AvgStock && [@Sales] <  _AvgSales, "#8E44AD",  -- Dead inventory
+			                "#F0A500"                                                     -- Review
+			            )
+			        RETURN
+			        "<circle cx='" & _cx & "' cy='" & _cy &
+			        "' r='5' fill='" & _clr & "' fill-opacity='0.75' stroke='#fff' stroke-width='0.8'>" &
+			        "<title>" & Fact[sku] & "</title></circle>",
+			        "",
+			        [@Sales], ASC
+			    )
+			
+			RETURN
+			
+			"<div style='font-family:Segoe UI,Arial,sans-serif;padding:16px 18px;
+			background:#FFFFFF;border-radius:10px;height:90%;box-sizing:border-box;'>
+			
+			<div style='display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;'>
+			<span style='font-size:10px;font-weight:700;letter-spacing:1px;color:#222;text-transform:uppercase;'>
+			Stock Availability vs Sales Velocity · By SKU
+			</span>
+			<span style='font-size:10px;color:#aaa;'>Stockout risk matrix</span>
+			</div>
+			
+			<svg width='100%' viewBox='0 0 " & _W & " " & _H & "' xmlns='http://www.w3.org/2000/svg'>
+			
+			  <!-- Plot area background -->
+			  <rect x='" & _PadL & "' y='" & _PadT & "'
+			        width='" & _PlotW & "' height='" & _PlotH & "'
+			        fill='#FAFAFA' stroke='#EBEBEB' stroke-width='1'/>
+			
+			  <!-- Quadrant dividers (dashed) -->
+			  <line x1='" & _QX & "' y1='" & _PadT & "'
+			        x2='" & _QX & "' y2='" & (_PadT + _PlotH) & "'
+			        stroke='#CCCCCC' stroke-width='1' stroke-dasharray='4 3'/>
+			  <line x1='" & _PadL & "' y1='" & _QY & "'
+			        x2='" & (_PadL + _PlotW) & "' y2='" & _QY & "'
+			        stroke='#CCCCCC' stroke-width='1' stroke-dasharray='4 3'/>
+			
+			  <!-- Quadrant corner labels -->
+			  <text x='" & (_PadL + 4) & "' y='" & (_PadT + 10) & "'
+			        font-size='7' fill='#CCCCCC' font-style='italic'>High Stock · Low Sales</text>
+			
+			  <text x='" & (_PadL + _PlotW - 4) & "' y='" & (_PadT + 10) & "'
+			        font-size='7' fill='#BBBBBB' font-style='italic' text-anchor='end'>Sweet spot</text>
+			
+			  <text x='" & (_PadL + 4) & "' y='" & (_PadT + _PlotH - 5) & "'
+			        font-size='7' fill='#E74C3C' fill-opacity='0.55' font-style='italic'>Stockout risk</text>
+			
+			  <text x='" & (_PadL + _PlotW - 4) & "' y='" & (_PadT + _PlotH - 5) & "'
+			        font-size='7' fill='#8E44AD' fill-opacity='0.55' font-style='italic' text-anchor='end'>Dead inventory</text>
+			
+			  <!-- Y axis line + labels -->
+			  <line x1='" & _PadL & "' y1='" & _PadT & "'
+			        x2='" & _PadL & "' y2='" & (_PadT + _PlotH) & "'
+			        stroke='#CCCCCC' stroke-width='1'/>
+			
+			  <text x='" & (_PadL - 4) & "' y='" & (_PadT + 4) & "'
+			        text-anchor='end' font-size='7' fill='#AAAAAA'>" & _YMax & "</text>
+			
+			  <text x='" & (_PadL - 4) & "' y='" & _QY & "'
+			        text-anchor='end' font-size='7' fill='#AAAAAA' dy='3'>" & _YMid & "</text>
+			
+			  <text x='" & (_PadL - 4) & "' y='" & (_PadT + _PlotH) & "'
+			        text-anchor='end' font-size='7' fill='#AAAAAA'>0</text>
+			
+			  <!-- Y axis title (rotated) -->
+			  <text x='10' y='" & (_PadT + _PlotH / 2) & "'
+			        text-anchor='middle' font-size='7.5' fill='#999999'
+			        transform='rotate(-90 10 " & (_PadT + _PlotH / 2) & ")'>Stock Available</text>
+			
+			  <!-- X axis line + labels -->
+			  <line x1='" & _PadL & "' y1='" & (_PadT + _PlotH) & "'
+			        x2='" & (_PadL + _PlotW) & "' y2='" & (_PadT + _PlotH) & "'
+			        stroke='#CCCCCC' stroke-width='1'/>
+			
+			  <text x='" & _PadL & "' y='" & (_PadT + _PlotH + 14) & "'
+			        text-anchor='middle' font-size='7' fill='#AAAAAA'>0</text>
+			
+			  <text x='" & _QX & "' y='" & (_PadT + _PlotH + 14) & "'
+			        text-anchor='middle' font-size='7' fill='#AAAAAA'>" & _XMid & "</text>
+			
+			  <text x='" & (_PadL + _PlotW) & "' y='" & (_PadT + _PlotH + 14) & "'
+			        text-anchor='end' font-size='7' fill='#AAAAAA'>" & _XMax & "</text>
+			
+			  <text x='" & (_PadL + _PlotW / 2) & "' y='" & (_PadT + _PlotH + 24) & "'
+			        text-anchor='middle' font-size='7.5' fill='#999999'>Units Sold →</text>
+			
+			  <!-- SKU dots -->
+			  " & _Dots & "
+			
+			</svg>
+			
+			<!-- Legend -->
+			<div style='display:flex;gap:14px;font-size:10px;color:#555;margin-top:2px;flex-wrap:wrap;'>
+			<span><span style='color:#1B9E75;font-size:14px;'>●</span> Healthy</span>
+			<span><span style='color:#E74C3C;font-size:14px;'>●</span> Stockout risk</span>
+			<span><span style='color:#8E44AD;font-size:14px;'>●</span> Dead stock</span>
+			<span><span style='color:#F0A500;font-size:14px;'>●</span> Review</span>
+			</div>
+			
+			</div>"
+			
+			```
+		lineageTag: d761a40e-63d7-4e9e-82c0-9f70f1f96b68
 
 	partition _Measures = m
 		mode: import
 		source =
 				let
 				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i44FAA==", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [Column1 = _t]),
-				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Column1", type text}})
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Column1", type text}}),
+				    #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"Column1"})
 				in
-				    #"Changed Type"
+				    #"Removed Columns"
 
 	changedProperty = Name
 
