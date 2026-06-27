@@ -1,13 +1,13 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
-  "name": "77ee8ff5485c5b746507",
+  "name": "94b1ec2d747028f2b400",
   "position": {
     "x": 640.61997643670634,
-    "y": 162.86948553475585,
-    "z": 6,
-    "height": 376.40947768032464,
+    "y": 523.5952349784003,
+    "z": 8,
+    "height": 196.64982327529779,
     "width": 639.41353580311556,
-    "tabOrder": 6
+    "tabOrder": 8
   },
   "visual": {
     "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
@@ -23,11 +23,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "HTML - Stock Availability vs Sales Velocity"
+                  "Property": "HTML_AvgDeliveryRegion"
                 }
               },
-              "queryRef": "_Measures.HTML - Stock Availability vs Sales Velocity",
-              "nativeQueryRef": "HTML - Stock Availability vs Sales Velocity"
+              "queryRef": "_Measures.HTML_AvgDeliveryRegion",
+              "nativeQueryRef": "HTML_AvgDeliveryRegion"
             }
           ]
         }

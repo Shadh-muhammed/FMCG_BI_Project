@@ -213,7 +213,7 @@ table _Measures
 	measure 'KPI HTML - Avg Delivery Days' =
 			
 			VAR _Avg = [Avg Delivery Days]
-			VAR _Target = 3.4
+			VAR _Target = 2
 			VAR _Diff = _Avg - _Target
 			
 			VAR _Color =
@@ -1111,7 +1111,10 @@ table _Measures
 			    FILTER(_Data, NOT ISBLANK([@Stock]) && NOT ISBLANK([@Sales]) && [@Sales] > 0)
 			
 			-- Axis bounds
+			VAR _MinStock = MINX(_Clean, [@Stock])
 			VAR _MaxStock = MAXX(_Clean, [@Stock])
+			
+			VAR _MinSales = MINX(_Clean, [@Sales])
 			VAR _MaxSales = MAXX(_Clean, [@Sales])
 			
 			-- Quadrant midpoints (average of each axis)
@@ -1120,7 +1123,7 @@ table _Measures
 			
 			-- SVG canvas
 			VAR _W    = 380
-			VAR _H    = 210
+			VAR _H    = 170
 			VAR _PadL = 42
 			VAR _PadR = 10
 			VAR _PadT = 24
@@ -1129,8 +1132,24 @@ table _Measures
 			VAR _PlotH = _H - _PadT - _PadB
 			
 			-- Quadrant divider pixel positions
-			VAR _QX = _PadL + INT(DIVIDE(_AvgSales, _MaxSales) * _PlotW)
-			VAR _QY = _PadT + INT(_PlotH - DIVIDE(_AvgStock, _MaxStock) * _PlotH)
+			VAR _QX =
+			    _PadL +
+			    INT(
+			        DIVIDE(
+			            _AvgSales - _MinSales,
+			            _MaxSales - _MinSales
+			        ) * _PlotW
+			    )
+			
+			VAR _QY =
+			    _PadT +
+			    INT(
+			        _PlotH -
+			        DIVIDE(
+			            _AvgStock - _MinStock,
+			            _MaxStock - _MinStock
+			        ) * _PlotH
+			    )
 			
 			-- Y-axis tick labels
 			VAR _YMax = IF(_MaxStock >= 1000, FORMAT(_MaxStock/1000,"0.0") & "K", FORMAT(_MaxStock,"0"))
@@ -1144,8 +1163,24 @@ table _Measures
 			VAR _Dots =
 			    CONCATENATEX(
 			        _Clean,
-			        VAR _cx = _PadL + INT(DIVIDE([@Sales], _MaxSales) * _PlotW)
-			        VAR _cy = _PadT + INT(_PlotH - DIVIDE([@Stock], _MaxStock) * _PlotH)
+			        VAR _cx =
+			    _PadL +
+			    INT(
+			        DIVIDE(
+			            [@Sales] - _MinSales,
+			            _MaxSales - _MinSales
+			        ) * _PlotW
+			    )
+			
+			    VAR _cy =
+			    _PadT +
+			    INT(
+			        _PlotH -
+			        DIVIDE(
+			            [@Stock] - _MinStock,
+			            _MaxStock - _MinStock
+			        ) * _PlotH
+			    )
 			        VAR _clr =
 			            SWITCH(
 			                TRUE(),
@@ -1255,6 +1290,320 @@ table _Measures
 			
 			```
 		lineageTag: d761a40e-63d7-4e9e-82c0-9f70f1f96b68
+
+	measure HTML_EcomRevTrend =
+			
+			
+			-- ── CHART DIMENSIONS ────────────────────────────────────────────────
+			VAR _W  = 640
+			VAR _H  = 220
+			VAR _PL = 12         -- padding left
+			VAR _PR = 12         -- padding right
+			VAR _PT = 14         -- padding top
+			VAR _PB = 30         -- padding bottom (space for x-axis labels)
+			VAR _CW = _W - _PL - _PR     -- chart draw width
+			VAR _CH = _H - _PT - _PB     -- chart draw height
+			
+			-- ── RAW DATA: E-Commerce revenue, monthly, all 3 years ──────────────
+			-- SUMMARIZE groups the E-Com filtered Fact by year + month from Dim_Date
+			-- ADDCOLUMNS then computes the actual SUM per group via context transition
+			VAR _Raw =
+			    ADDCOLUMNS(
+			        SUMMARIZE(
+			            CALCULATETABLE( 'Fact', Dim_channel[channel] = "E-Commerce" ),
+			            Dim_Date[year],
+			            Dim_Date[month]
+			        ),
+			        "Rev",
+			        CALCULATE(
+			            SUM( Fact[Sales Amount] ),
+			            Dim_channel[channel] = "E-Commerce"
+			        )
+			    )
+			
+			-- Scale anchor: highest monthly value across all 3 years
+			VAR _MaxRev = MAXX( _Raw, [Rev] )
+			VAR _Sc     = IF( _MaxRev = 0, 1, _MaxRev )
+			
+			-- Split by year for separate polylines
+			VAR _D22 = FILTER( _Raw, [year] = 2022 )
+			VAR _D23 = FILTER( _Raw, [year] = 2023 )
+			VAR _D24 = FILTER( _Raw, [year] = 2024 )
+			
+			-- ── POLYLINE COORDINATE BUILDER ──────────────────────────────────────
+			-- X: maps month 1→12 across chart width
+			-- Y: maps Rev to chart height (SVG y=0 is top, so we invert)
+			
+			VAR _P22 =
+			    CONCATENATEX(
+			        ADDCOLUMNS( _D22,
+			            "PX", FORMAT( _PL + ( ( [month] - 1 ) / 11 ) * _CW, "0.0" ),
+			            "PY", FORMAT( _PT + _CH - ( [Rev] / _Sc ) * _CH,    "0.0" )
+			        ),
+			        [PX] & "," & [PY],
+			        " ",
+			        [month], ASC
+			    )
+			
+			VAR _P23 =
+			    CONCATENATEX(
+			        ADDCOLUMNS( _D23,
+			            "PX", FORMAT( _PL + ( ( [month] - 1 ) / 11 ) * _CW, "0.0" ),
+			            "PY", FORMAT( _PT + _CH - ( [Rev] / _Sc ) * _CH,    "0.0" )
+			        ),
+			        [PX] & "," & [PY],
+			        " ",
+			        [month], ASC
+			    )
+			
+			VAR _P24 =
+			    CONCATENATEX(
+			        ADDCOLUMNS( _D24,
+			            "PX", FORMAT( _PL + ( ( [month] - 1 ) / 11 ) * _CW, "0.0" ),
+			            "PY", FORMAT( _PT + _CH - ( [Rev] / _Sc ) * _CH,    "0.0" )
+			        ),
+			        [PX] & "," & [PY],
+			        " ",
+			        [month], ASC
+			    )
+			
+			-- ── X-AXIS MONTH LABELS (Jan, Mar, May, Jul, Sep, Nov, Dec) ─────────
+			VAR _XLabels =
+			    CONCATENATEX(
+			        FILTER(
+			            ADDCOLUMNS(
+			                GENERATESERIES( 1, 12, 1 ),
+			                "Lbl",  SWITCH( [Value],
+			                            1,"Jan",  2,"Feb",  3,"Mar",  4,"Apr",
+			                            5,"May",  6,"Jun",  7,"Jul",  8,"Aug",
+			                            9,"Sep",  10,"Oct", 11,"Nov", 12,"Dec" ),
+			                "Show", SWITCH( [Value], 1,1, 3,1, 5,1, 7,1, 9,1, 11,1, 12,1, 0 ),
+			                "XP",   _PL + ( ( [Value] - 1 ) / 11 ) * _CW
+			            ),
+			            [Show] = 1
+			        ),
+			        "<text x='" & FORMAT( [XP], "0.0" ) & "'
+			               y='" & FORMAT( _PT + _CH + 18, "0" ) & "'
+			               text-anchor='middle'
+			               font-size='9.5' fill='#aaa'>" & [Lbl] & "</text>",
+			        "",
+			        [Value], ASC
+			    )
+			
+			-- ── HORIZONTAL GRID LINES (4 lines across chart) ────────────────────
+			VAR _Grids =
+			    CONCATENATEX(
+			        ADDCOLUMNS(
+			            GENERATESERIES( 1, 4, 1 ),
+			            "GY", FORMAT( _PT + ( [Value] / 4 ) * _CH, "0.0" )
+			        ),
+			        "<line x1='" & FORMAT( _PL, "0" ) & "' y1='" & [GY] & "'
+			               x2='" & FORMAT( _PL + _CW, "0" ) & "' y2='" & [GY] & "'
+			               stroke='#efefef' stroke-width='1'/>",
+			        "",
+			        [Value], ASC
+			    )
+			
+			-- ── FOOTER: Dynamic E-Com growth 2022→2024 for Central ──────────────
+			VAR _EC22C =
+			    CALCULATE( SUM( Fact[Sales Amount] ),
+			        Dim_channel[channel] = "E-Commerce",
+			        Dim_Date[year]       = 2022,
+			        Dim_region[region]   = "Central" )
+			VAR _EC24C =
+			    CALCULATE( SUM( Fact[Sales Amount] ),
+			        Dim_channel[channel] = "E-Commerce",
+			        Dim_Date[year]       = 2024,
+			        Dim_region[region]   = "Central" )
+			VAR _Grw   = IF( _EC22C <> 0, ( _EC24C - _EC22C ) / _EC22C * 100, BLANK() )
+			VAR _GrwSt = FORMAT( _Grw, "+0.0;-0.0" ) & "%"
+			
+			-- ── ASSEMBLE HTML ────────────────────────────────────────────────────
+			RETURN
+			"<div style='font-family:Segoe UI,sans-serif;padding:12px 14px;
+			             background:#fff;border-radius:6px;box-sizing:border-box;'>
+			
+			  <!-- HEADER ROW -->
+			  <div style='display:flex;justify-content:space-between;
+			              align-items:baseline;margin-bottom:6px;'>
+			    <span style='font-size:11px;font-weight:700;
+			                 letter-spacing:.07em;color:#1a1a1a;'>
+			      E-COMMERCE CHANNEL · REVENUE TREND
+			    </span>
+			    <span style='font-size:10px;color:#aaa;'>Month over month — AED</span>
+			  </div>
+			
+			  <!-- LEGEND -->
+			  <div style='display:flex;gap:18px;margin-bottom:4px;'>
+			    <span style='font-size:10px;color:#14532d;font-weight:700;'>—— 2024</span>
+			    <span style='font-size:10px;color:#0e7490;'>—— 2023</span>
+			    <span style='font-size:10px;color:#bbb;'>- - 2022</span>
+			  </div>
+			
+			  <!-- SVG CHART -->
+			  <svg width='100%' viewBox='0 0 " & FORMAT(_W,"0") & " " & FORMAT(_H,"0") & "'
+			       xmlns='http://www.w3.org/2000/svg'>
+			
+			    " & _Grids & "
+			
+			    <!-- 2022: light dashed -->
+			    <polyline points='" & _P22 & "'
+			      fill='none' stroke='#d1d5db' stroke-width='1.5' stroke-dasharray='5,3'/>
+			
+			    <!-- 2023: teal solid -->
+			    <polyline points='" & _P23 & "'
+			      fill='none' stroke='#0e7490' stroke-width='2'/>
+			
+			    <!-- 2024: dark green bold -->
+			    <polyline points='" & _P24 & "'
+			      fill='none' stroke='#14532d' stroke-width='3'/>
+			
+			    " & _XLabels & "
+			
+			  </svg>
+			
+			  <!-- INSIGHT CALLOUT -->
+			  <div style='margin-top:4px;padding:5px 10px;
+			              background:#fffbeb;border-left:3px solid #d97706;
+			              font-size:10px;color:#555;border-radius:0 3px 3px 0;'>
+			    ✦ E-Commerce grew " & _GrwSt & " in Central 2022–2024
+			      — separate channel investment case
+			  </div>
+			
+			</div>"
+		lineageTag: bc26a9cb-58bd-4263-89f9-805bc6a607cc
+
+	measure HTML_AvgDeliveryRegion =
+			
+			
+			-- ── CONFIG ──────────────────────────────────────────────────────────
+			VAR _Target   = 2     -- target delivery days (hardcoded; adjust if from Dim_Target)
+			VAR _MaxScale = 6.0      -- axis ceiling (keeps bar proportions stable across refreshes)
+			VAR _BarMaxW  = 420      -- max bar pixel width in SVG
+			VAR _BarH     = 22       -- bar height in px
+			VAR _LabelW   = 62       -- region label column width
+			VAR _RowGap   = 20       -- vertical gap between bar rows
+			VAR _SVGW     = _LabelW + _BarMaxW + 24
+			
+			-- ── DATA: average delivery days per region ───────────────────────────
+			VAR _RegData =
+			    ADDCOLUMNS(
+			        VALUES( Dim_region[region] ),
+			        "AvgDel", CALCULATE( AVERAGE( Fact[delivery_days] ) )
+			    )
+			
+			-- ── ENRICH: bar width, rank (for row order), color, label ───────────
+			-- Color logic:
+			--   Green  = on/under target
+			--   Orange = up to 10% over target
+			--   Red    = more than 10% over target
+			VAR _Enriched =
+			    ADDCOLUMNS(
+			        _RegData,
+			        "BarW",  MIN( [AvgDel] / _MaxScale * _BarMaxW,  _BarMaxW ),
+			        "Rank",  RANKX( _RegData, [AvgDel],, DESC ),     -- highest del days = row 1
+			        "Color", IF( [AvgDel] <= _Target,                "#166534",
+			                 IF( [AvgDel] <= _Target * 1.10,         "#c2410c",
+			                                                          "#b91c1c" ) ),
+			        "Lbl",   FORMAT( [AvgDel], "0.0" ) & "d"
+			    )
+			
+			-- ── FINAL PASS: add pixel Y positions (depends on Rank) ──────────────
+			VAR _WithPos =
+			    ADDCOLUMNS(
+			        _Enriched,
+			        "RowY",  ( [Rank] - 1 ) * _RowGap + 4,
+			        "TextY", ( [Rank] - 1 ) * _RowGap + 4 + _BarH - 6
+			    )
+			
+			-- ── SVG HEIGHT ────────────────────────────────────────────────────────
+			VAR _NumReg = COUNTROWS( _RegData )
+			VAR _SVGH = _NumReg * _RowGap + 10
+			
+			-- ── TARGET LINE X position ───────────────────────────────────────────
+			VAR _TargetX = FORMAT( _LabelW + ( _Target / _MaxScale ) * _BarMaxW, "0.0" )
+			
+			-- ── BAR ROWS ─────────────────────────────────────────────────────────
+			VAR _Bars =
+			    CONCATENATEX(
+			        _WithPos,
+			        -- Region label
+			        "<text x='0' y='" & FORMAT( [TextY], "0" ) & "'
+			               font-size='11' font-weight='600' fill='#444'>" & [region] & "</text>"
+			
+			        -- Background track
+			        & "<rect x='" & FORMAT( _LabelW, "0" ) & "'
+			                y='" & FORMAT( [RowY], "0" ) & "'
+			                width='" & FORMAT( _BarMaxW, "0" ) & "'
+			                height='" & FORMAT( _BarH, "0" ) & "'
+			                fill='#f3f4f6' rx='3'/>"
+			
+			        -- Coloured bar
+			        & "<rect x='" & FORMAT( _LabelW, "0" ) & "'
+			                y='" & FORMAT( [RowY], "0" ) & "'
+			                width='" & FORMAT( [BarW], "0.0" ) & "'
+			                height='" & FORMAT( _BarH, "0" ) & "'
+			                fill='" & [Color] & "' rx='3'/>"
+			
+			        -- Value label inside bar
+			        & "<text x='" & FORMAT( _LabelW + 8, "0" ) & "'
+			                y='" & FORMAT( [TextY], "0" ) & "'
+			                font-size='11' font-weight='700' fill='#fff'>" & [Lbl] & "</text>",
+			
+			        "",
+			        [AvgDel], DESC       -- Central (highest) first
+			    )
+			
+			-- ── FOOTER: dynamic on-track region name ─────────────────────────────
+			VAR _OnTrackNames =
+			    CONCATENATEX( FILTER( _RegData, [AvgDel] <= _Target ), [region], ", " )
+			VAR _OnTrackCount =
+			    COUNTROWS( FILTER( _RegData, [AvgDel] <= _Target ) )
+			VAR _FooterTxt =
+			    "| Target = " & FORMAT( _Target, "0.0" ) & "d  ("
+			    & _OnTrackNames
+			    & " only region" & IF( _OnTrackCount = 1, "", "s" ) & " on track)"
+			
+			-- ── ASSEMBLE HTML ────────────────────────────────────────────────────
+			RETURN
+			"<div style='font-family:Segoe UI,sans-serif;padding:12px 14px;
+			             background:#fff;border-radius:6px;box-sizing:border-box;'>
+			
+			  <!-- HEADER ROW -->
+			  <div style='display:flex;justify-content:space-between;
+			              align-items:baseline;margin-bottom:12px;'>
+			    <span style='font-size:11px;font-weight:700;
+			                 letter-spacing:.07em;color:#1a1a1a;'>
+			      AVG DELIVERY DAYS · BY REGION
+			    </span>
+			    <span style='font-size:10px;color:#aaa;'>
+			      Target: " & FORMAT( _Target, "0.0" ) & " days
+			    </span>
+			  </div>
+			
+			  <!-- SVG BAR CHART -->
+			  <svg width='100%'
+			       viewBox='0 0 " & FORMAT( _SVGW, "0" ) & " " & FORMAT( _SVGH, "0" ) & "'
+			       xmlns='http://www.w3.org/2000/svg'>
+			
+			    " & _Bars & "
+			
+			    <!-- Dashed target line -->
+			    <line x1='" & _TargetX & "' y1='0'
+			          x2='" & _TargetX & "' y2='" & FORMAT( _SVGH, "0" ) & "'
+			          stroke='#9ca3af' stroke-width='1.5' stroke-dasharray='4,3'/>
+			
+			  </svg>
+			
+			  <!-- INSIGHT FOOTER -->
+			  <div style='margin-top:6px;padding:5px 10px;
+			              background:#f9fafb;border-left:3px solid #9ca3af;
+			              font-size:10px;color:#6b7280;border-radius:0 3px 3px 0;'>
+			    " & _FooterTxt & "
+			  </div>
+			
+			</div>"
+		lineageTag: 294a501d-f05d-44a8-bae1-6eb4f042a818
 
 	partition _Measures = m
 		mode: import
