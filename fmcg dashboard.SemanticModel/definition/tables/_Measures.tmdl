@@ -1605,6 +1605,188 @@ table _Measures
 			</div>"
 		lineageTag: 294a501d-f05d-44a8-bae1-6eb4f042a818
 
+	measure HTML_SKUChannelPerf =
+			
+			
+			VAR _ChanR = "Retail"
+			VAR _ChanE = "E-Commerce"
+			VAR _ChanD = "Discount"
+			VAR _TopN  = 8
+			
+			-- TOP N SKUs by total revenue
+			VAR _AllSKU =
+			    ADDCOLUMNS(
+			        VALUES( Dim_Product[Product_id] ),
+			        "TotalRev", CALCULATE( SUM( Fact[Sales Amount] ) )
+			    )
+			
+			VAR _TopSKUs =
+			    TOPN( _TopN, _AllSKU, [TotalRev], DESC )
+			
+			-- Channel revenue per SKU
+			VAR _Pivot =
+			    ADDCOLUMNS(
+			        _TopSKUs,
+			        "RevR", CALCULATE( SUM( Fact[Sales Amount] ), Dim_channel[channel] = _ChanR ),
+			        "RevE", CALCULATE( SUM( Fact[Sales Amount] ), Dim_channel[channel] = _ChanE ),
+			        "RevD", CALCULATE( SUM( Fact[Sales Amount] ), Dim_channel[channel] = _ChanD )
+			    )
+			
+			-- Max per channel (guard against all-blank)
+			VAR _MaxR = IFERROR( MAXX( _Pivot, [RevR] ), 1 )
+			VAR _MaxE = IFERROR( MAXX( _Pivot, [RevE] ), 1 )
+			VAR _MaxD = IFERROR( MAXX( _Pivot, [RevD] ), 1 )
+			
+			-- Normalise to nearest 20% bucket
+			VAR _PivotN =
+			    ADDCOLUMNS(
+			        _Pivot,
+			        "NR", IF( [RevR] > 0 && _MaxR > 0, MROUND( [RevR] / _MaxR * 100, 20 ), 0 ),
+			        "NE", IF( [RevE] > 0 && _MaxE > 0, MROUND( [RevE] / _MaxE * 100, 20 ), 0 ),
+			        "ND", IF( [RevD] > 0 && _MaxD > 0, MROUND( [RevD] / _MaxD * 100, 20 ), 0 )
+			    )
+			
+			-- Build table rows
+			VAR _Rows =
+			    CONCATENATEX(
+			        _PivotN,
+			
+			        VAR _NR = [NR]
+			        VAR _NE = [NE]
+			        VAR _ND = [ND]
+			
+			        -- Badge background colours (teal scale matching dashboard theme)
+			        VAR _BR =
+			            SWITCH( TRUE(),
+			                _NR >= 100, "#0B5E4B",
+			                _NR >= 80,  "#1D9E75",
+			                _NR >= 60,  "#5DCAA5",
+			                _NR >= 40,  "#C9940A",
+			                _NR >= 20,  "#E8E6DF",
+			                            "#F4F3F0"
+			            )
+			        VAR _BE =
+			            SWITCH( TRUE(),
+			                _NE >= 100, "#0B5E4B",
+			                _NE >= 80,  "#1D9E75",
+			                _NE >= 60,  "#5DCAA5",
+			                _NE >= 40,  "#C9940A",
+			                _NE >= 20,  "#E8E6DF",
+			                            "#F4F3F0"
+			            )
+			        VAR _BD =
+			            SWITCH( TRUE(),
+			                _ND >= 100, "#0B5E4B",
+			                _ND >= 80,  "#1D9E75",
+			                _ND >= 60,  "#5DCAA5",
+			                _ND >= 40,  "#C9940A",
+			                _ND >= 20,  "#E8E6DF",
+			                            "#F4F3F0"
+			            )
+			
+			        -- Badge text colours
+			        VAR _TR = IF( _NR >= 60, "#ffffff", IF( _NR >= 40, "#1a1a1a", "#9ca3af" ) )
+			        VAR _TE = IF( _NE >= 60, "#ffffff", IF( _NE >= 40, "#1a1a1a", "#9ca3af" ) )
+			        VAR _TD = IF( _ND >= 60, "#ffffff", IF( _ND >= 40, "#1a1a1a", "#9ca3af" ) )
+			
+			        -- Badge labels
+			        VAR _LR = IF( _NR = 0, UNICHAR(8212), FORMAT( _NR, "0" ) & "%" )
+			        VAR _LE = IF( _NE = 0, UNICHAR(8212), FORMAT( _NE, "0" ) & "%" )
+			        VAR _LD = IF( _ND = 0, UNICHAR(8212), FORMAT( _ND, "0" ) & "%" )
+			
+			        -- Reusable badge snippet (inline-block is the key fix — prevents full-width stretch)
+			        VAR _Badge_R =
+			            "<div style='display:inline-block;background:" & _BR & ";color:" & _TR
+			            & ";border-radius:4px;padding:3px 10px;font-size:11px;font-weight:700;"
+			            & "min-width:46px;text-align:center;'>" & _LR & "</div>"
+			
+			        VAR _Badge_E =
+			            "<div style='display:inline-block;background:" & _BE & ";color:" & _TE
+			            & ";border-radius:4px;padding:3px 10px;font-size:11px;font-weight:700;"
+			            & "min-width:46px;text-align:center;'>" & _LE & "</div>"
+			
+			        VAR _Badge_D =
+			            "<div style='display:inline-block;background:" & _BD & ";color:" & _TD
+			            & ";border-radius:4px;padding:3px 10px;font-size:11px;font-weight:700;"
+			            & "min-width:46px;text-align:center;'>" & _LD & "</div>"
+			
+			        RETURN
+			            "<tr>"
+			            & "<td class='sku-cell'>" & [Product_id] & "</td>"
+			            & "<td class='val-cell'>" & _Badge_R & "</td>"
+			            & "<td class='val-cell'>" & _Badge_E & "</td>"
+			            & "<td class='val-cell'>" & _Badge_D & "</td>"
+			            & "</tr>",
+			
+			        UNICHAR(10),
+			        [TotalRev],
+			        DESC
+			    )
+			
+			-- Legend row (matches dashboard reference)
+			VAR _Legend =
+			    "<div class='legend'>"
+			    & "<span class='dot' style='background:#0B5E4B'></span>Very High &nbsp;"
+			    & "<span class='dot' style='background:#1D9E75'></span>High &nbsp;"
+			    & "<span class='dot' style='background:#5DCAA5'></span>Med &nbsp;"
+			    & "<span class='dot' style='background:#E8E6DF;border:1px solid #ccc'></span>Low &nbsp;"
+			    & "<span class='dot' style='background:#F4F3F0;border:1px solid #ccc'></span>Minimal"
+			    & "</div>"
+			
+			-- Full HTML document — this is what was missing before
+			VAR _HTML =
+			    "<!DOCTYPE html><html><head><meta charset='utf-8'><style>"
+			
+			    -- Reset & base
+			    & "* { box-sizing:border-box; margin:0; padding:0; }"
+			    & "body { font-family: 'Segoe UI', Arial, sans-serif; font-size:12px;"
+			    &        "background:#fff; padding:10px; }"
+			
+			    -- Legend
+			    & ".legend { display:flex; align-items:center; gap:4px; flex-wrap:wrap;"
+			    &           "font-size:10px; color:#6b7280; margin-bottom:10px; }"
+			    & ".dot { display:inline-block; width:10px; height:10px;"
+			    &        "border-radius:2px; margin-right:3px; }"
+			
+			    -- Table structure
+			    & "table { width:100%; border-collapse:collapse; }"
+			
+			    -- Header
+			    & "thead th { padding:6px 8px; font-size:10px; font-weight:600;"
+			    &            "color:#6b7280; text-transform:uppercase; letter-spacing:.04em;"
+			    &            "border-bottom:2px solid #e5e7eb; background:#fafafa; }"
+			    & "thead th:first-child { text-align:left; }"
+			    & "thead th:not(:first-child) { text-align:center; }"
+			
+			    -- Body cells
+			    & ".sku-cell { padding:6px 10px; font-size:11px; font-weight:600;"
+			    &             "color:#374151; white-space:nowrap; }"
+			    & ".val-cell { padding:5px 6px; text-align:center;"
+			    &             "vertical-align:middle; }"
+			
+			    -- Row dividers and hover
+			    & "tbody tr { border-bottom:1px solid #f0efec; }"
+			    & "tbody tr:last-child { border-bottom:none; }"
+			    & "tbody tr:hover { background:#f9fafb; }"
+			
+			    & "</style></head><body>"
+			
+			    & _Legend
+			
+			    & "<table>"
+			    & "<thead><tr>"
+			    & "<th>SKU</th>"
+			    & "<th>Retail</th>"
+			    & "<th>E-Commerce</th>"
+			    & "<th>Discount</th>"
+			    & "</tr></thead>"
+			    & "<tbody>" & _Rows & "</tbody>"
+			    & "</table>"
+			    & "</body></html>"
+			
+			RETURN _HTML
+		lineageTag: d580f880-e87a-4ed7-b9f6-067a746d7d47
+
 	partition _Measures = m
 		mode: import
 		source =
