@@ -1771,8 +1771,16 @@ table _Measures
 			
 			    & "</style></head><body>"
 			
+			    -- Header
+			    & "<div style='display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px;'>"
+			    & "<span style='font-size:10px;font-weight:700;letter-spacing:1px;color:#222;text-transform:uppercase;'>SKU X Channel Performance</span>"
+			    & "<span style='font-size:10px;color:#aaa;'>Revenue Contribution</span>"
+			    & "</div>"
+			
+			    -- Legend below the header
 			    & _Legend
 			
+			    -- Table
 			    & "<table>"
 			    & "<thead><tr>"
 			    & "<th>SKU</th>"
@@ -1786,6 +1794,696 @@ table _Measures
 			
 			RETURN _HTML
 		lineageTag: d580f880-e87a-4ed7-b9f6-067a746d7d47
+
+	measure HTML_RevenuePareto =
+			
+			
+			-- ══ CONFIG ════════════════════════════════════════════════════════
+			VAR _TopN      = 10       -- bars to show individually
+			VAR _ParetoTgt = 0.80     -- 80% threshold
+			VAR _SVGW      = 580
+			VAR _SVGH      = 235
+			VAR _ML        = 44       -- left margin (revenue axis)
+			VAR _MR        = 38       -- right margin (cumulative % axis)
+			VAR _MT        = 14
+			VAR _MB        = 54       -- bottom margin for rotated labels
+			VAR _CW        = _SVGW - _ML - _MR
+			VAR _CH        = _SVGH - _MT - _MB
+			
+			-- ══ STEP A · ALL SKU REVENUE (filter out blanks) ═══════════════════
+			VAR _AllSKU =
+			    FILTER(
+			        ADDCOLUMNS(
+			            VALUES( Dim_Product[Product_id] ),
+			            "Rev", CALCULATE( SUM( Fact[Sales Amount] ) )
+			        ),
+			        NOT ISBLANK( [Rev] ) && [Rev] > 0
+			    )
+			
+			VAR _TotalRev   = SUMX( _AllSKU, [Rev] )
+			VAR _TotalCount = COUNTROWS( _AllSKU )
+			
+			-- ══ STEP B · TOP N FOR CHART DISPLAY ══════════════════════════════
+			VAR _TopSKUs = TOPN( _TopN, _AllSKU, [Rev], DESC )
+			
+			VAR _Ranked =
+			    ADDCOLUMNS(
+			        _TopSKUs,
+			        "Rk", RANKX( _TopSKUs, [Rev],, DESC, Dense )
+			    )
+			
+			-- Cumulative % for top N (for chart line)
+			VAR _WithCumul =
+			    ADDCOLUMNS(
+			        _Ranked,
+			        "CumPct",
+			        VAR _R = [Rk]
+			        RETURN
+			            IF( _TotalRev > 0,
+			                SUMX( FILTER( _Ranked, [Rk] <= _R ), [Rev] ) / _TotalRev,
+			                0 )
+			    )
+			
+			-- ══ STEP C · ALL-SKU CUMULATIVE for Pareto Count ══════════════════
+			-- Separate from top-N so count is accurate even if 80% falls in Others
+			VAR _AllRanked =
+			    ADDCOLUMNS(
+			        _AllSKU,
+			        "Rk_All", RANKX( _AllSKU, [Rev],, DESC, Dense )
+			    )
+			
+			VAR _AllCumul =
+			    ADDCOLUMNS(
+			        _AllRanked,
+			        "CumRev",
+			        VAR _R = [Rk_All]
+			        RETURN SUMX( FILTER( _AllRanked, [Rk_All] <= _R ), [Rev] )
+			    )
+			
+			VAR _ParetoSKUs =
+			    MINX( FILTER( _AllCumul, [CumRev] >= _TotalRev * _ParetoTgt ), [Rk_All] )
+			VAR _RemCount = _TotalCount - _ParetoSKUs
+			
+			-- ══ STEP D · OTHERS BUCKET ════════════════════════════════════════
+			VAR _TopRev   = SUMX( _TopSKUs, [Rev] )
+			VAR _OtherRev = _TotalRev - _TopRev
+			
+			-- ══ STEP E · BAR SCALE & GEOMETRY ════════════════════════════════
+			VAR _MaxRev    = MAXX( _WithCumul, [Rev] )
+			VAR _MaxRevScl = _MaxRev * 1.05     -- 5% headroom above tallest bar
+			
+			VAR _NItems  = _TopN + 1
+			VAR _SlotW   = _CW / _NItems
+			VAR _BarW    = _SlotW * 0.62
+			VAR _BarGap  = ( _SlotW - _BarW ) / 2
+			
+			-- ══ STEP F · BARS (Top N) ════════════════════════════════════════
+			VAR _Bars =
+			    CONCATENATEX(
+			        _WithCumul,
+			        VAR _BX = _ML + ( [Rk] - 1 ) * _SlotW + _BarGap
+			        VAR _BH = INT( ( [Rev] / _MaxRevScl ) * _CH )
+			        VAR _BY = _MT + _CH - _BH
+			        RETURN
+			        "<rect x='"      & FORMAT( _BX,   "0.0" ) & "'
+			               y='"      & FORMAT( _BY,   "0"   ) & "'
+			               width='"  & FORMAT( _BarW, "0.0" ) & "'
+			               height='" & FORMAT( _BH,   "0"   ) & "'
+			               fill='#14532d' rx='2'/>",
+			        "",
+			        [Rk], ASC
+			    )
+			
+			-- ══ STEP G · OTHERS BAR (lighter colour) ═════════════════════════
+			VAR _OtherBX = _ML + _TopN * _SlotW + _BarGap
+			VAR _OtherBH = INT( ( _OtherRev / _MaxRevScl ) * _CH )
+			VAR _OtherBY = _MT + _CH - _OtherBH
+			VAR _OtherBar =
+			    "<rect x='"      & FORMAT( _OtherBX, "0.0" ) & "'
+			           y='"      & FORMAT( _OtherBY, "0"   ) & "'
+			           width='"  & FORMAT( _BarW,    "0.0" ) & "'
+			           height='" & FORMAT( _OtherBH, "0"   ) & "'
+			           fill='#a3c4a8' rx='2'/>"
+			
+			-- ══ STEP H · CUMULATIVE LINE + CIRCLES ════════════════════════════
+			VAR _LinePoints =
+			    CONCATENATEX(
+			        _WithCumul,
+			        FORMAT( _ML + ( [Rk] - 0.5 ) * _SlotW, "0.0" )
+			        & "," &
+			        FORMAT( _MT + _CH - ( [CumPct] * _CH ), "0.0" ),
+			        " ",
+			        [Rk], ASC
+			    )
+			
+			-- Final point: Others at 100%
+			VAR _OtherXC   = _ML + ( _TopN + 0.5 ) * _SlotW
+			VAR _FullLine  = _LinePoints & " " & FORMAT( _OtherXC, "0.0" ) & "," & FORMAT( _MT, "0" )
+			
+			VAR _Circles =
+			    CONCATENATEX(
+			        _WithCumul,
+			        VAR _CX = _ML + ( [Rk] - 0.5 ) * _SlotW
+			        VAR _CY = _MT + _CH - ( [CumPct] * _CH )
+			        RETURN
+			        "<circle cx='" & FORMAT( _CX, "0.0" ) & "'
+			                 cy='" & FORMAT( _CY, "0.0" ) & "'
+			                 r='3' fill='#d97706' stroke='#fff' stroke-width='1.2'/>",
+			        "",
+			        [Rk], ASC
+			    )
+			
+			VAR _OtherCircle =
+			    "<circle cx='" & FORMAT( _OtherXC, "0.0" ) & "'
+			             cy='" & FORMAT( _MT, "0" ) & "'
+			             r='3' fill='#d97706' stroke='#fff' stroke-width='1.2'/>"
+			
+			-- ══ STEP I · X-AXIS LABELS (rotated -45°) ═════════════════════════
+			VAR _XLabels =
+			    CONCATENATEX(
+			        _WithCumul,
+			        VAR _XC  = _ML + ( [Rk] - 0.5 ) * _SlotW
+			        VAR _YLb = _MT + _CH + 5
+			        RETURN
+			        "<text transform='rotate(-45 " & FORMAT( _XC, "0.0" ) & " " & FORMAT( _YLb, "0" ) & ")'
+			               x='"         & FORMAT( _XC, "0.0" ) & "'
+			               y='"         & FORMAT( _YLb, "0"  ) & "'
+			               font-size='9' fill='#6b7280' text-anchor='end'>"
+			        & [Product_id] & "</text>",
+			        "",
+			        [Rk], ASC
+			    )
+			
+			VAR _OtherLblY = _MT + _CH + 5
+			VAR _OtherXLabel =
+			    "<text transform='rotate(-45 " & FORMAT( _OtherXC, "0.0" ) & " " & FORMAT( _OtherLblY, "0" ) & ")'
+			           x='"         & FORMAT( _OtherXC,  "0.0" ) & "'
+			           y='"         & FORMAT( _OtherLblY, "0"  ) & "'
+			           font-size='9' fill='#6b7280' text-anchor='end'>Others</text>"
+			
+			-- ══ STEP J · LEFT Y-AXIS (Revenue) ════════════════════════════════
+			VAR _MaxRevM = INT( _MaxRevScl / 1000000 ) + 1
+			VAR _YStep   = IF( _MaxRevM <= 10, 2, IF( _MaxRevM <= 25, 5, 10 ) )
+			
+			VAR _LeftAxis =
+			    CONCATENATEX(
+			        FILTER(
+			            ADDCOLUMNS(
+			                GENERATESERIES( 0, 7, 1 ),
+			                "VM", [Value] * _YStep,
+			                "YP", _MT + _CH - ( [Value] * _YStep * 1000000 / _MaxRevScl ) * _CH
+			            ),
+			            [VM] * 1000000 <= _MaxRevScl
+			        ),
+			        "<text x='" & FORMAT( _ML - 4, "0"   ) & "'
+			               y='" & FORMAT( [YP] + 3, "0.0" ) & "'
+			               font-size='9' fill='#9ca3af' text-anchor='end'>"
+			        & FORMAT( [VM], "0" ) & "M</text>"
+			        & "<line x1='" & FORMAT( _ML,       "0"   ) & "' y1='" & FORMAT( [YP], "0.0" ) & "'
+			                x2='" & FORMAT( _ML + _CW,  "0"   ) & "' y2='" & FORMAT( [YP], "0.0" ) & "'
+			                stroke='#f3f4f6' stroke-width='1'/>",
+			        "",
+			        [Value], ASC
+			    )
+			
+			-- ══ STEP K · RIGHT Y-AXIS (Cumulative %) ══════════════════════════
+			VAR _RightAxis =
+			    CONCATENATEX(
+			        ADDCOLUMNS( GENERATESERIES( 0, 5, 1 ), "Pct", [Value] * 20 ),
+			        VAR _YR = _MT + _CH - ( [Pct] / 100 ) * _CH
+			        RETURN
+			        "<text x='" & FORMAT( _ML + _CW + 4, "0"   ) & "'
+			               y='" & FORMAT( _YR + 3,        "0.0" ) & "'
+			               font-size='9' fill='#d97706' text-anchor='start'>"
+			        & FORMAT( [Pct], "0" ) & "%</text>",
+			        "",
+			        [Value], ASC
+			    )
+			
+			-- ══ STEP L · 80% THRESHOLD LINE ═══════════════════════════════════
+			VAR _80Y =  _MT + _CH - ( 0.80 * _CH )
+			VAR _ThreshLine =
+			    "<line x1='" & FORMAT( _ML,      "0"   ) & "' y1='" & FORMAT( _80Y, "0.0" ) & "'
+			           x2='" & FORMAT( _ML + _CW,"0"   ) & "' y2='" & FORMAT( _80Y, "0.0" ) & "'
+			           stroke='#ef4444' stroke-width='1.5' stroke-dasharray='5,3' opacity='0.8'/>"
+			  & "<text x='" & FORMAT( _ML + _CW - 2, "0"   ) & "'
+			           y='" & FORMAT( _80Y - 4,        "0.0" ) & "'
+			           font-size='9' font-weight='600' fill='#ef4444' text-anchor='end'>80%</text>"
+			
+			-- ══ STEP M · FOOTER ═══════════════════════════════════════════════
+			VAR _FooterTxt =
+			    "Top " & FORMAT( _ParetoSKUs, "0" ) & " SKUs generate 80% of revenue — remaining "
+			    & FORMAT( _RemCount, "0" ) & " SKUs contribute only 20%, signalling portfolio rationalisation opportunity"
+			
+			-- ══ ASSEMBLE ══════════════════════════════════════════════════════
+			RETURN
+			"<div style='font-family:Segoe UI,sans-serif;padding:12px 14px;
+			             background:#fff;border-radius:6px;box-sizing:border-box;'>
+			
+			  <div style='display:flex;justify-content:space-between;
+			              align-items:baseline;margin-bottom:8px;'>
+			    <span style='font-size:11px;font-weight:700;
+			                 letter-spacing:.07em;color:#1a1a1a;'>
+			      Revenue Pareto · Top SKUs
+			    </span>
+			    <span style='font-size:10px;color:#aaa;'>Cumulative % revenue — AED</span>
+			  </div>
+			
+			  <svg width='100%'
+			       viewBox='0 0 " & FORMAT( _SVGW, "0" ) & " " & FORMAT( _SVGH, "0" ) & "'
+			       xmlns='http://www.w3.org/2000/svg'>
+			
+			    " & _LeftAxis & "
+			    " & _Bars & "
+			    " & _OtherBar & "
+			
+			    <polyline points='" & _FullLine & "'
+			      fill='none' stroke='#d97706' stroke-width='2'/>
+			
+			    " & _Circles & "
+			    " & _OtherCircle & "
+			    " & _ThreshLine & "
+			    " & _RightAxis & "
+			
+			    <line x1='" & FORMAT( _ML,      "0" ) & "' y1='" & FORMAT( _MT + _CH, "0" ) & "'
+			          x2='" & FORMAT( _ML + _CW,"0" ) & "' y2='" & FORMAT( _MT + _CH, "0" ) & "'
+			          stroke='#e5e7eb' stroke-width='1'/>
+			
+			    " & _XLabels & "
+			    " & _OtherXLabel & "
+			
+			  </svg>
+			
+			  <div style='margin-top:4px;padding:5px 10px;background:#fef2f2;
+			              border-left:3px solid #ef4444;font-size:10px;color:#555;
+			              border-radius:0 3px 3px 0;'>
+			    ✦ " & _FooterTxt & "
+			  </div>
+			</div>"
+		lineageTag: aafca3c7-cf80-44d4-8a2c-24b64d742d66
+
+	measure KPI_ActiveSKUs =
+			
+			
+			VAR _CY = MAXX( ALL( Dim_Date ), Dim_Date[year] )
+			
+			-- Active SKUs: distinct products with any sales (all time)
+			VAR _ActiveCount =
+			    COUNTROWS(
+			        FILTER(
+			            VALUES( Dim_Product[Product_id] ),
+			            CALCULATE( SUM( Fact[Sales Amount] ) ) > 0
+			        )
+			    )
+			
+			-- Total SKUs in master list
+			VAR _TotalCount = DISTINCTCOUNT( Dim_Product[Product_id] )
+			
+			-- New launches: in current year but absent in previous year
+			VAR _CYSKUs =
+			    CALCULATETABLE( VALUES( Dim_Product[Product_id] ), Dim_Date[year] = _CY )
+			VAR _PYSKUs =
+			    CALCULATETABLE( VALUES( Dim_Product[Product_id] ), Dim_Date[year] = _CY - 1 )
+			VAR _NewLaunches = COUNTROWS( EXCEPT( _CYSKUs, _PYSKUs ) )
+			
+			RETURN
+			"<div style='font-family:Segoe UI,Arial,sans-serif;
+			background:#FFFFFF;
+			border-top:3px solid #2F5F8F;
+			border-radius:10px;
+			padding:16px 18px;
+			height:90%;
+			box-sizing:border-box;'>
+			
+			<div style='font-size:10px;font-weight:700;letter-spacing:1px;
+			color:#67726C;text-transform:uppercase;margin-bottom:8px;'>
+			ACTIVE SKUs
+			</div>
+			
+			<div style='font-size:28px;font-weight:700;color:#1C2624;line-height:1;'>
+			" & FORMAT( _ActiveCount, "0" ) & "
+			<span style='font-size:16px;font-weight:500;color:#67726C;'>
+			/ " & FORMAT( _TotalCount, "0" ) & "
+			</span>
+			</div>
+			
+			<div style='font-size:11px;color:#67726C;margin:8px 0 10px;'>
+			active vs total product universe
+			</div>
+			
+			<div style='display:inline-block;font-size:11px;font-weight:600;
+			padding:3px 9px;border-radius:6px;
+			background:#E7F2EB;color:#2C5C3C;'>
+			▲ " & FORMAT( _NewLaunches, "0" ) & " new launches
+			</div>
+			</div>"
+		lineageTag: a3ca5c61-b33a-4c47-a28e-dd03f7a1a25d
+
+	measure KPI_ParetoThreshold =
+			
+			
+			-- Always shows all-time figure regardless of slicers
+			VAR _AllSKU =
+			    FILTER(
+			        ADDCOLUMNS(
+			            VALUES( Dim_Product[Product_id] ),
+			            "Rev", CALCULATE(
+			                SUM( Fact[Sales Amount] ),
+			                REMOVEFILTERS( Dim_Date ),
+			                REMOVEFILTERS( Dim_region )
+			            )
+			        ),
+			        NOT ISBLANK( [Rev] ) && [Rev] > 0
+			    )
+			
+			VAR _TotalRev   = SUMX( _AllSKU, [Rev] )
+			VAR _TotalCount = COUNTROWS( _AllSKU )
+			
+			VAR _AllRanked =
+			    ADDCOLUMNS(
+			        _AllSKU,
+			        "Rk", RANKX( _AllSKU, [Rev],, DESC, Dense )
+			    )
+			
+			VAR _AllCumul =
+			    ADDCOLUMNS(
+			        _AllRanked,
+			        "CumRev",
+			        VAR _R = [Rk]
+			        RETURN SUMX( FILTER( _AllRanked, [Rk] <= _R ), [Rev] )
+			    )
+			
+			VAR _ParetoN  = MINX( FILTER( _AllCumul, [CumRev] >= _TotalRev * 0.80 ), [Rk] )
+			VAR _RestCount = _TotalCount - _ParetoN
+			VAR _RestPct  = FORMAT( _RestCount / _TotalCount * 100, "0" ) & "%"
+			
+			RETURN
+			"<div style='font-family:Segoe UI,Arial,sans-serif;
+			background:#FFFFFF;
+			border-top:3px solid #2F5F8F;
+			border-radius:10px;
+			padding:16px 18px;
+			height:90%;
+			box-sizing:border-box;'>
+			
+			<div style='font-size:10px;font-weight:700;letter-spacing:1px;
+			color:#67726C;text-transform:uppercase;margin-bottom:8px;'>
+			PARETO THRESHOLD
+			</div>
+			
+			<div style='font-size:28px;font-weight:700;color:#1C2624;line-height:1;'>
+			" & FORMAT( _ParetoN, "0" ) & "
+			<span style='font-size:18px;font-weight:600;'> SKUs</span>
+			</div>
+			
+			<div style='font-size:11px;color:#67726C;margin:8px 0 10px;'>
+			drive 80% of total portfolio revenue
+			</div>
+			
+			<div style='display:inline-block;font-size:11px;font-weight:600;
+			padding:3px 9px;border-radius:6px;
+			background:#f3f4f6;color:#374151;'>
+			80% of revenue
+			</div>
+			</div>"
+		lineageTag: ad7275ff-871d-4449-8b8a-d007daa814d9
+
+	measure KPI_PriceMixEffect =
+			
+			
+			-- Latest complete month
+			VAR _CY = MAXX( ALL( Dim_Date ), Dim_Date[year] )
+			VAR _CM = MAXX( FILTER( ALL( Dim_Date ), Dim_Date[year] = _CY ), Dim_Date[month] )
+			VAR _PM = IF( _CM = 1, 12, _CM - 1 )
+			VAR _PY = IF( _CM = 1, _CY - 1, _CY )
+			
+			VAR _CurRev =
+			    CALCULATE( SUM( Fact[Sales Amount] ),
+			        Dim_Date[year] = _CY, Dim_Date[month] = _CM )
+			
+			VAR _PrevRev =
+			    CALCULATE( SUM( Fact[Sales Amount] ),
+			        Dim_Date[year] = _PY, Dim_Date[month] = _PM )
+			
+			VAR _Effect = _CurRev - _PrevRev
+			VAR _EffectM = _Effect / 1000000
+			
+			VAR _Color = IF( _Effect >= 0, "#2C5C3C", "#C27C00" )
+			VAR _Bg    = IF( _Effect >= 0, "#E7F2EB", "#F7E8B5" )
+			VAR _Arrow = IF( _Effect >= 0, "↑", "↓" )
+			VAR _Sign  = IF( _Effect >= 0, "+", "-" )
+			
+			-- Current month name for subtitle
+			VAR _MonthName =
+			    SWITCH( _CM, 1,"Jan",2,"Feb",3,"Mar",4,"Apr",5,"May",6,"Jun",
+			                 7,"Jul",8,"Aug",9,"Sep",10,"Oct",11,"Nov",12,"Dec" )
+			VAR _PrevMonthName =
+			    SWITCH( _PM, 1,"Jan",2,"Feb",3,"Mar",4,"Apr",5,"May",6,"Jun",
+			                 7,"Jul",8,"Aug",9,"Sep",10,"Oct",11,"Nov",12,"Dec" )
+			
+			RETURN
+			"<div style='font-family:Segoe UI,Arial,sans-serif;
+			background:#FFFFFF;
+			border-top:3px solid #2F5F8F;
+			border-radius:10px;
+			padding:16px 18px;
+			height:90%;
+			box-sizing:border-box;'>
+			
+			<div style='font-size:10px;font-weight:700;letter-spacing:1px;
+			color:#67726C;text-transform:uppercase;margin-bottom:8px;'>
+			PRICE-MIX EFFECT
+			</div>
+			
+			<div style='font-size:28px;font-weight:700;color:#1C2624;line-height:1;'>
+			" & _Sign & FORMAT( ABS( _EffectM ), "0.0" ) & "M
+			</div>
+			
+			<div style='font-size:11px;color:#67726C;margin:8px 0 10px;'>
+			revenue change " & _PrevMonthName & " → " & _MonthName & " " & FORMAT( _CY, "0" ) & "
+			</div>
+			
+			<div style='display:inline-block;font-size:11px;font-weight:600;
+			padding:3px 9px;border-radius:6px;
+			background:" & _Bg & ";color:" & _Color & ";'>
+			" & _Arrow & " vs last month
+			</div>
+			</div>"
+		lineageTag: f4c1854b-f011-4322-a233-bb2df773cb7f
+
+	measure 'Avg Visibility Score' =
+			
+			DIVIDE(
+			    SUM( Fact[stock_available] ),
+			    SUM( Fact[stock_available] ) + SUM( Fact[units_sold] )
+			)
+		lineageTag: e5bb8503-d7a0-477a-9e0c-bf29f931ce95
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure KPI_AvgVisibilityScore =
+			
+			
+			VAR _Score  = [Avg Visibility Score]
+			VAR _Target = 0.07          -- adjust to your actual target
+			
+			VAR _Diff   = _Score - _Target
+			VAR _Color  = IF( _Diff >= 0, "#2C5C3C", "#C27C00" )
+			VAR _Bg     = IF( _Diff >= 0, "#E7F2EB", "#F7E8B5" )
+			VAR _Arrow  = IF( _Diff >= 0, "▲", "▼" )
+			VAR _Sign   = IF( _Diff >= 0, "+", "" )   -- negative already has minus sign
+			
+			RETURN
+			"<div style='font-family:Segoe UI,Arial,sans-serif;
+			background:#FFFFFF;
+			border-top:3px solid #2F5F8F;
+			border-radius:10px;
+			padding:16px 18px;
+			height:90%;
+			box-sizing:border-box;'>
+			
+			<div style='font-size:10px;font-weight:700;letter-spacing:1px;
+			color:#67726C;text-transform:uppercase;margin-bottom:8px;'>
+			AVG VISIBILITY SCORE
+			</div>
+			
+			<div style='font-size:28px;font-weight:700;color:#1C2624;line-height:1;'>
+			" & FORMAT( _Score, "0.000" ) & "
+			</div>
+			
+			<div style='font-size:11px;color:#67726C;margin:8px 0 10px;'>
+			avg shelf fill rate, all outlet types
+			</div>
+			
+			<div style='display:inline-block;font-size:11px;font-weight:600;
+			padding:3px 9px;border-radius:6px;
+			background:" & _Bg & ";color:" & _Color & ";'>
+			" & _Arrow & " " & _Sign & FORMAT( _Diff, "0.000" ) & " VS TARGET " & FORMAT( _Target, "0.000" ) & "
+			</div>
+			</div>"
+		lineageTag: c8006932-3600-44c1-a2f0-183df45f813e
+
+	measure HTML_ItemVisibilityByOutlet =
+			
+			
+			-- ══ CONFIG ════════════════════════════════════════════════════
+			VAR _Target   = 0.07      -- dashed target line
+			VAR _MaxScale = 0.12      -- x-axis ceiling (gives breathing room)
+			VAR _BarMaxW  = 380       -- max bar pixel width
+			VAR _BarH     = 18        -- bar height
+			VAR _LabelW   = 105       -- left label column width
+			VAR _RowGap   = 30        -- vertical spacing between rows
+			VAR _ValColW  = 44        -- right-side score label column
+			
+			VAR _SVGW = _LabelW + _BarMaxW + _ValColW + 10
+			
+			-- ══ STEP A · SCORE PER OUTLET TYPE ═══════════════════════════
+			-- Dim_outlet[channel] holds outlet types (Hypermarket, Supermarket etc.)
+			-- CALCULATE filters Fact rows through the Dim_outlet relationship
+			VAR _Data =
+			    ADDCOLUMNS(
+			        FILTER(
+			            VALUES( Dim_outlet[channel] ),
+			            NOT ISBLANK( Dim_outlet[channel] )
+			        ),
+			        "Score",
+			        CALCULATE(
+			            DIVIDE(
+			                SUM( Fact[stock_available] ),
+			                SUM( Fact[stock_available] ) + SUM( Fact[units_sold] )
+			            )
+			        )
+			    )
+			
+			-- Remove outlet types with no data
+			VAR _DataClean = FILTER( _Data, NOT ISBLANK( [Score] ) && [Score] > 0 )
+			
+			-- ══ STEP B · RANK WORST → BEST (worst at top, best at bottom) ═══
+			-- Row 1 (y=top) = worst performer so it reads like the screenshot
+			VAR _Ranked =
+			    ADDCOLUMNS(
+			        _DataClean,
+			        "Rk", RANKX( _DataClean, [Score],, ASC, Dense )
+			    )
+			
+			VAR _NumRows = COUNTROWS( _DataClean )
+			VAR _SVGH    = _NumRows * _RowGap + 32
+			
+			-- ══ STEP C · ENRICH: positions, colors, labels ════════════════
+			VAR _Enriched =
+			    ADDCOLUMNS(
+			        _Ranked,
+			        "RowY",  ( [Rk] - 1 ) * _RowGap + 4,
+			        "TextY", ( [Rk] - 1 ) * _RowGap + 4 + _BarH - 5,
+			        "BarW",  DIVIDE( [Score], _MaxScale ) * _BarMaxW,
+			
+			        -- RAG: green if at/above target, amber if within 30% below, red otherwise
+			        "Color",
+			        IF( [Score] >= _Target,              "#166534",
+			        IF( [Score] >= _Target * 0.70,       "#ca8a04",
+			                                             "#dc2626" ) )
+			    )
+			
+			-- ══ STEP D · BUILD BAR ROWS ════════════════════════════════════
+			VAR _Bars =
+			    CONCATENATEX(
+			        _Enriched,
+			
+			        -- Outlet type label (left side)
+			        "<text x='0'
+			               y='" & FORMAT( [TextY], "0" ) & "'
+			               font-size='10' font-weight='600'
+			               fill='#374151'>" & [channel] & "</text>"
+			
+			        -- Background track
+			        & "<rect x='" & FORMAT( _LabelW, "0" ) & "'
+			                y='" & FORMAT( [RowY],   "0" ) & "'
+			                width='" & FORMAT( _BarMaxW, "0" ) & "'
+			                height='" & FORMAT( _BarH, "0" ) & "'
+			                fill='#f3f4f6' rx='3'/>"
+			
+			        -- Coloured bar
+			        & "<rect x='" & FORMAT( _LabelW, "0" ) & "'
+			                y='" & FORMAT( [RowY],   "0" ) & "'
+			                width='" & FORMAT( [BarW], "0.1" ) & "'
+			                height='" & FORMAT( _BarH,   "0" ) & "'
+			                fill='" & [Color] & "' rx='3'/>"
+			
+			        -- Score value to right of bar
+			        & "<text x='" & FORMAT( _LabelW + _BarMaxW + 6, "0" ) & "'
+			                y='" & FORMAT( [TextY], "0" ) & "'
+			                font-size='10' font-weight='600'
+			                fill='#374151'>" & FORMAT( [Score], "0.000" ) & "</text>",
+			
+			        "",
+			        [Rk], ASC      -- worst (rank 1) at top
+			    )
+			
+			-- ══ STEP E · X-AXIS LABELS ════════════════════════════════════
+			-- 0.00, 0.02, 0.04, 0.06, 0.08, 0.10 (every 0.02)
+			VAR _XAxis =
+			    CONCATENATEX(
+			        ADDCOLUMNS(
+			            GENERATESERIES( 0, 6, 1 ),
+			            "XV",  [Value] * 0.02,
+			            "XP",  _LabelW + DIVIDE( [Value] * 0.02, _MaxScale ) * _BarMaxW
+			        ),
+			        "<text x='"  & FORMAT( [XP], "0.0" ) & "'
+			               y='"  & FORMAT( _SVGH - 4, "0" ) & "'
+			               text-anchor='middle'
+			               font-size='9' fill='#9ca3af'>"
+			        & FORMAT( [XV], "0.00" ) & "</text>",
+			        "",
+			        [Value], ASC
+			    )
+			
+			-- ══ STEP F · TARGET DASHED LINE ════════════════════════════════
+			VAR _TargetX =
+			    FORMAT( _LabelW + DIVIDE( _Target, _MaxScale ) * _BarMaxW, "0.1" )
+			
+			VAR _TargetLine =
+			    "<line x1='" & _TargetX & "' y1='0'
+			           x2='" & _TargetX & "' y2='" & FORMAT( _SVGH - 16, "0" ) & "'
+			           stroke='#9ca3af' stroke-width='1.5' stroke-dasharray='4,3'/>"
+			  & "<text x='" & _TargetX & "'
+			           y='8'
+			           text-anchor='middle'
+			           font-size='9' fill='#9ca3af'>target</text>"
+			
+			-- ══ STEP G · DYNAMIC FOOTER ════════════════════════════════════
+			-- Compares worst outlet vs best outlet scores dynamically
+			VAR _BestOutlet  = MINX( FILTER( _Enriched, [Score] = MAXX( _Enriched, [Score] ) ), [channel] )
+			VAR _WorstOutlet = MINX( FILTER( _Enriched, [Score] = MINX( _Enriched, [Score] ) ), [channel] )
+			VAR _BestScore   = MAXX( _Enriched, [Score] )
+			VAR _WorstScore  = MINX( _Enriched, [Score] )
+			VAR _Ratio       = FORMAT( DIVIDE( _BestScore, _WorstScore ), "0.0" )
+			
+			VAR _FooterTxt =
+			    _WorstOutlet & " visibility (" & FORMAT( _WorstScore, "0.000" ) & ") is "
+			    & _Ratio & "× below " & _BestOutlet
+			    & " — planogram compliance action required"
+			
+			-- ══ ASSEMBLE ══════════════════════════════════════════════════
+			RETURN
+			"<div style='font-family:Segoe UI,sans-serif;padding:12px 14px;
+			             background:#fff;border-radius:6px;box-sizing:border-box;'>
+			
+			  <!-- HEADER -->
+			  <div style='display:flex;justify-content:space-between;
+			              align-items:baseline;margin-bottom:10px;'>
+			    <span style='font-size:11px;font-weight:700;
+			                 letter-spacing:.07em;color:#1a1a1a;'>
+			      ITEM VISIBILITY SCORE · BY OUTLET TYPE
+			    </span>
+			    <span style='font-size:10px;color:#aaa;'>Avg shelf fill rate</span>
+			  </div>
+			
+			  <!-- CHART -->
+			  <svg width='100%'
+			       viewBox='0 0 " & FORMAT( _SVGW, "0" ) & " " & FORMAT( _SVGH, "0" ) & "'
+			       xmlns='http://www.w3.org/2000/svg'>
+			
+			    " & _Bars & "
+			    " & _TargetLine & "
+			    " & _XAxis & "
+			
+			    <!-- X-axis baseline -->
+			    <line x1='" & FORMAT( _LabelW, "0" ) & "'
+			          y1='" & FORMAT( _SVGH - 16, "0" ) & "'
+			          x2='" & FORMAT( _LabelW + _BarMaxW, "0" ) & "'
+			          y2='" & FORMAT( _SVGH - 16, "0" ) & "'
+			          stroke='#e5e7eb' stroke-width='1'/>
+			
+			  </svg>
+			
+			  <!-- FOOTER CALLOUT -->
+			  <div style='margin-top:4px;padding:5px 10px;background:#fef2f2;
+			              border-left:3px solid #dc2626;font-size:10px;color:#555;
+			              border-radius:0 3px 3px 0;'>
+			    ✦ " & _FooterTxt & "
+			  </div>
+			</div>"
+		lineageTag: d794da79-c2d9-4c03-8f18-52b6a4fa7816
 
 	partition _Measures = m
 		mode: import
