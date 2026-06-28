@@ -2188,40 +2188,81 @@ table _Measures
 			</div>"
 		lineageTag: ad7275ff-871d-4449-8b8a-d007daa814d9
 
-	measure KPI_PriceMixEffect =
+	measure KPI_RevenueGrowthMoM =
 			
 			
-			-- Latest complete month
-			VAR _CY = MAXX( ALL( Dim_Date ), Dim_Date[year] )
-			VAR _CM = MAXX( FILTER( ALL( Dim_Date ), Dim_Date[year] = _CY ), Dim_Date[month] )
-			VAR _PM = IF( _CM = 1, 12, _CM - 1 )
-			VAR _PY = IF( _CM = 1, _CY - 1, _CY )
+			-- Latest month with actual sales
+			VAR _LastDate =
+			    MAXX(
+			        FILTER(
+			            ALL(Fact),
+			            NOT ISBLANK(Fact[Sales Amount])
+			        ),
+			        Fact[date]
+			    )
+			
+			VAR _CY = YEAR(_LastDate)
+			VAR _CM = MONTH(_LastDate)
+			
+			VAR _PM = IF(_CM = 1, 12, _CM - 1)
+			VAR _PY = IF(_CM = 1, _CY - 1, _CY)
 			
 			VAR _CurRev =
-			    CALCULATE( SUM( Fact[Sales Amount] ),
-			        Dim_Date[year] = _CY, Dim_Date[month] = _CM )
+			    CALCULATE(
+			        SUM(Fact[Sales Amount]),
+			        FILTER(
+			            ALL(Dim_Date),
+			            Dim_Date[year] = _CY
+			                && Dim_Date[month] = _CM
+			        )
+			    )
 			
 			VAR _PrevRev =
-			    CALCULATE( SUM( Fact[Sales Amount] ),
-			        Dim_Date[year] = _PY, Dim_Date[month] = _PM )
+			    CALCULATE(
+			        SUM(Fact[Sales Amount]),
+			        FILTER(
+			            ALL(Dim_Date),
+			            Dim_Date[year] = _PY
+			                && Dim_Date[month] = _PM
+			        )
+			    )
 			
 			VAR _Effect = _CurRev - _PrevRev
-			VAR _EffectM = _Effect / 1000000
+			VAR _EffectM = DIVIDE(_Effect, 1000000)
 			
-			VAR _Color = IF( _Effect >= 0, "#2C5C3C", "#C27C00" )
-			VAR _Bg    = IF( _Effect >= 0, "#E7F2EB", "#F7E8B5" )
-			VAR _Arrow = IF( _Effect >= 0, "↑", "↓" )
-			VAR _Sign  = IF( _Effect >= 0, "+", "-" )
+			VAR _GrowthPct =
+			    DIVIDE(_Effect, _PrevRev)
 			
-			-- Current month name for subtitle
+			VAR _Color =
+			    IF(_Effect >= 0, "#2C5C3C", "#C27C00")
+			
+			VAR _Bg =
+			    IF(_Effect >= 0, "#E7F2EB", "#F7E8B5")
+			
+			VAR _Arrow =
+			    IF(_Effect >= 0, "↑", "↓")
+			
+			VAR _Sign =
+			    IF(_Effect >= 0, "+", "-")
+			
 			VAR _MonthName =
-			    SWITCH( _CM, 1,"Jan",2,"Feb",3,"Mar",4,"Apr",5,"May",6,"Jun",
-			                 7,"Jul",8,"Aug",9,"Sep",10,"Oct",11,"Nov",12,"Dec" )
+			    SWITCH(
+			        _CM,
+			        1,"Jan",2,"Feb",3,"Mar",4,"Apr",
+			        5,"May",6,"Jun",7,"Jul",8,"Aug",
+			        9,"Sep",10,"Oct",11,"Nov",12,"Dec"
+			    )
+			
 			VAR _PrevMonthName =
-			    SWITCH( _PM, 1,"Jan",2,"Feb",3,"Mar",4,"Apr",5,"May",6,"Jun",
-			                 7,"Jul",8,"Aug",9,"Sep",10,"Oct",11,"Nov",12,"Dec" )
+			    SWITCH(
+			        _PM,
+			        1,"Jan",2,"Feb",3,"Mar",4,"Apr",
+			        5,"May",6,"Jun",7,"Jul",8,"Aug",
+			        9,"Sep",10,"Oct",11,"Nov",12,"Dec"
+			    )
 			
 			RETURN
+			
 			"<div style='font-family:Segoe UI,Arial,sans-serif;
 			background:#FFFFFF;
 			border-top:3px solid #2F5F8F;
@@ -2232,22 +2273,23 @@ table _Measures
 			
 			<div style='font-size:10px;font-weight:700;letter-spacing:1px;
 			color:#67726C;text-transform:uppercase;margin-bottom:8px;'>
-			PRICE-MIX EFFECT
+			REVENUE GROWTH MOM
 			</div>
 			
 			<div style='font-size:28px;font-weight:700;color:#1C2624;line-height:1;'>
-			" & _Sign & FORMAT( ABS( _EffectM ), "0.0" ) & "M
+			" & _Sign & FORMAT(ABS(_EffectM), "0.0") & "M
 			</div>
 			
 			<div style='font-size:11px;color:#67726C;margin:8px 0 10px;'>
-			revenue change " & _PrevMonthName & " → " & _MonthName & " " & FORMAT( _CY, "0" ) & "
+			revenue change " & _PrevMonthName & " → " & _MonthName & " " & FORMAT(_CY,"0") & "
 			</div>
 			
 			<div style='display:inline-block;font-size:11px;font-weight:600;
 			padding:3px 9px;border-radius:6px;
 			background:" & _Bg & ";color:" & _Color & ";'>
-			" & _Arrow & " vs last month
+			" & _Arrow & " " & FORMAT(ABS(_GrowthPct),"0.0%") & " vs last month
 			</div>
+			
 			</div>"
 		lineageTag: f4c1854b-f011-4322-a233-bb2df773cb7f
 
@@ -2484,6 +2526,296 @@ table _Measures
 			  </div>
 			</div>"
 		lineageTag: d794da79-c2d9-4c03-8f18-52b6a4fa7816
+
+	measure 'REVENUE BRIDGE VALUES' =
+			
+			VAR OctRevenue = 8.2
+			VAR Volume     = 0.8
+			VAR Price      = 0.8
+			VAR Mix        = -0.2
+			VAR Promo      = -0.2
+			
+			VAR NovRevenue = OctRevenue + Volume + Price + Mix + Promo
+			VAR Run1 = OctRevenue
+			VAR Run2 = Run1 + Volume
+			VAR Run3 = Run2 + Price
+			VAR Run4 = Run3 + Mix
+			VAR Run5 = Run4 + Promo
+			VAR YMin = 7.5
+			VAR YMax = 10.5
+			VAR ChartHeight = 260
+			
+			VAR Scale =
+			    DIVIDE(ChartHeight, YMax - YMin)
+			
+			VAR Y_Oct    = ChartHeight - (Run1 - YMin) * Scale
+			VAR Y_Run2   = ChartHeight - (Run2 - YMin) * Scale
+			VAR Y_Run3   = ChartHeight - (Run3 - YMin) * Scale
+			VAR Y_Run4   = ChartHeight - (Run4 - YMin) * Scale
+			VAR Y_Run5   = ChartHeight - (Run5 - YMin) * Scale
+			VAR Y_Nov    = ChartHeight - (NovRevenue - YMin) * Scale
+			VAR X1 = 55
+			VAR X2 = 150
+			VAR X3 = 245
+			VAR X4 = 340
+			VAR X5 = 435
+			VAR X6 = 530
+			
+			VAR BarWidth = 42
+			VAR TotalColor = "#2F6FAE"
+			VAR Positive = "#0E7C66"
+			VAR Negative = "#D9534F"
+			VAR Connector = "#BFBFBF"
+			VAR Dot = "#E39B18"
+		lineageTag: b65cac97-f0c9-4e5e-b9ab-0b361e1b1256
+
+	measure HTML_RevenueBridge = ```
+			
+			
+			VAR OctRevenue = 8.2
+			VAR Volume     = 0.8
+			VAR Price      = 0.8
+			VAR Mix        = -0.2
+			VAR Promo      = -0.2
+			
+			VAR NovRevenue = OctRevenue + Volume + Price + Mix + Promo
+			
+			-- Running totals
+			VAR Run1 = OctRevenue
+			VAR Run2 = Run1 + Volume
+			VAR Run3 = Run2 + Price
+			VAR Run4 = Run3 + Mix
+			VAR Run5 = Run4 + Promo
+			
+			-- Chart setup
+			VAR YMin = 7.5
+			VAR YMax = 10.5
+			
+			VAR ChartHeight = 260
+			VAR ChartWidth  = 620
+			
+			VAR Scale =
+			DIVIDE( ChartHeight , YMax - YMin )
+			
+			-- X Positions
+			VAR X1 = 55
+			VAR X2 = 150
+			VAR X3 = 245
+			VAR X4 = 340
+			VAR X5 = 435
+			VAR X6 = 530
+			
+			VAR BarWidth = 44
+			
+			-- Colors
+			VAR TotalColor = "#2F6FAE"
+			VAR Positive   = "#0E7C66"
+			VAR Negative   = "#D9534F"
+			VAR Connector  = "#D1D5DB"
+			
+			-- Heights
+			VAR H_Oct =
+			( OctRevenue - YMin ) * Scale
+			
+			VAR H_Vol =
+			ABS( Volume ) * Scale
+			
+			VAR H_Price =
+			ABS( Price ) * Scale
+			
+			VAR H_Mix =
+			ABS( Mix ) * Scale
+			
+			VAR H_Promo =
+			ABS( Promo ) * Scale
+			
+			VAR H_Nov =
+			( NovRevenue - YMin ) * Scale
+			
+			-- Y coordinates
+			VAR Y_Oct =
+			ChartHeight - H_Oct
+			
+			VAR Y_Vol =
+			ChartHeight - MAX( Run1 , Run2 ) * Scale + YMin * Scale
+			
+			VAR Y_Price =
+			ChartHeight - MAX( Run2 , Run3 ) * Scale + YMin * Scale
+			
+			VAR Y_Mix =
+			ChartHeight - MAX( Run3 , Run4 ) * Scale + YMin * Scale
+			
+			VAR Y_Promo =
+			ChartHeight - MAX( Run4 , Run5 ) * Scale + YMin * Scale
+			
+			VAR Y_Nov =
+			ChartHeight - H_Nov
+			
+			VAR FooterText =
+			"Revenue increased from "
+			& FORMAT( OctRevenue , "$0.0M" )
+			& " to "
+			& FORMAT( NovRevenue , "$0.0M" )
+			& " driven primarily by Volume (+"
+			& FORMAT( Volume , "0.0" )
+			& "M) and Price (+"
+			& FORMAT( Price , "0.0" )
+			& "M)."
+			
+			RETURN
+			
+			"<div style='font-family:Segoe UI,sans-serif;
+			          padding:12px 14px;
+			          background:#fff;
+			          border-radius:6px;'>
+			
+			<div style='display:flex;
+			            justify-content:space-between;
+			            margin-bottom:10px;'>
+			
+			<span style='font-size:11px;
+			          font-weight:700;
+			          letter-spacing:.07em;
+			          color:#1a1a1a;'>
+			REVENUE BRIDGE · OCT → NOV </span>
+			
+			<span style='font-size:10px;
+			          color:#9ca3af;'>
+			Impact Analysis ($M) </span>
+			
+			</div>
+			
+			<svg viewBox='0 0 620 300'
+			  width='100%'
+			  xmlns='http://www.w3.org/2000/svg'>
+			
+			<!-- CONNECTORS -->
+			
+			<line x1='" & (X1+22) & "'
+			   y1='" & Y_Oct & "'
+			   x2='" & X2 & "'
+			   y2='" & Y_Oct & "'
+			   stroke='" & Connector & "'
+			   stroke-width='2'/>
+			
+			<line x1='" & (X2+22) & "'
+			   y1='" & (ChartHeight-(Run2-YMin)*Scale) & "'
+			   x2='" & X3 & "'
+			   y2='" & (ChartHeight-(Run2-YMin)*Scale) & "'
+			   stroke='" & Connector & "'
+			   stroke-width='2'/>
+			
+			<line x1='" & (X3+22) & "'
+			   y1='" & (ChartHeight-(Run3-YMin)*Scale) & "'
+			   x2='" & X4 & "'
+			   y2='" & (ChartHeight-(Run3-YMin)*Scale) & "'
+			   stroke='" & Connector & "'
+			   stroke-width='2'/>
+			
+			<line x1='" & (X4+22) & "'
+			   y1='" & (ChartHeight-(Run4-YMin)*Scale) & "'
+			   x2='" & X5 & "'
+			   y2='" & (ChartHeight-(Run4-YMin)*Scale) & "'
+			   stroke='" & Connector & "'
+			   stroke-width='2'/>
+			
+			<line x1='" & (X5+22) & "'
+			   y1='" & (ChartHeight-(Run5-YMin)*Scale) & "'
+			   x2='" & X6 & "'
+			   y2='" & (ChartHeight-(Run5-YMin)*Scale) & "'
+			   stroke='" & Connector & "'
+			   stroke-width='2'/>
+			
+			<!-- OCT TOTAL -->
+			
+			<rect x='" & X1 & "'
+			   y='" & Y_Oct & "'
+			   width='" & BarWidth & "'
+			   height='" & H_Oct & "'
+			   fill='" & TotalColor & "'
+			   rx='4'/>
+			
+			<!-- VOLUME -->
+			
+			<rect x='" & X2 & "'
+			   y='" & Y_Vol & "'
+			   width='" & BarWidth & "'
+			   height='" & H_Vol & "'
+			   fill='" & Positive & "'
+			   rx='4'/>
+			
+			<!-- PRICE -->
+			
+			<rect x='" & X3 & "'
+			   y='" & Y_Price & "'
+			   width='" & BarWidth & "'
+			   height='" & H_Price & "'
+			   fill='" & Positive & "'
+			   rx='4'/>
+			
+			<!-- MIX -->
+			
+			<rect x='" & X4 & "'
+			   y='" & Y_Mix & "'
+			   width='" & BarWidth & "'
+			   height='" & H_Mix & "'
+			   fill='" & Negative & "'
+			   rx='4'/>
+			
+			<!-- PROMO -->
+			
+			<rect x='" & X5 & "'
+			   y='" & Y_Promo & "'
+			   width='" & BarWidth & "'
+			   height='" & H_Promo & "'
+			   fill='" & Negative & "'
+			   rx='4'/>
+			
+			<!-- NOV TOTAL -->
+			
+			<rect x='" & X6 & "'
+			   y='" & Y_Nov & "'
+			   width='" & BarWidth & "'
+			   height='" & H_Nov & "'
+			   fill='" & TotalColor & "'
+			   rx='4'/>
+			
+			<!-- VALUES -->
+			
+			<text x='" & (X1+22) & "' y='" & (Y_Oct-8) & "'
+			   text-anchor='middle'
+			   font-size='10'
+			   font-weight='600'>
+			" & FORMAT(OctRevenue,"0.0") & " </text>
+			
+			<text x='" & (X6+22) & "' y='" & (Y_Nov-8) & "'
+			   text-anchor='middle'
+			   font-size='10'
+			   font-weight='600'>
+			" & FORMAT(NovRevenue,"0.0") & " </text>
+			
+			<!-- CATEGORY LABELS -->
+			
+			<text x='" & (X1+22) & "' y='285' text-anchor='middle' font-size='10'>Oct</text> <text x='" & (X2+22) & "' y='285' text-anchor='middle' font-size='10'>Volume</text> <text x='" & (X3+22) & "' y='285' text-anchor='middle' font-size='10'>Price</text> <text x='" & (X4+22) & "' y='285' text-anchor='middle' font-size='10'>Mix</text> <text x='" & (X5+22) & "' y='285' text-anchor='middle' font-size='10'>Promo</text> <text x='" & (X6+22) & "' y='285' text-anchor='middle' font-size='10'>Nov</text>
+			
+			</svg>
+			
+			<div style='margin-top:4px;
+			            padding:5px 10px;
+			            background:#eff6ff;
+			            border-left:3px solid #2563eb;
+			            font-size:10px;
+			            color:#555;
+			            border-radius:0 3px 3px 0;'>
+			
+			✦ " & FooterText & "
+			
+			</div>
+			
+			</div>"
+			
+			```
+		lineageTag: 5f316d46-c14f-4d84-a3b6-b0bf12fe77ae
 
 	partition _Measures = m
 		mode: import

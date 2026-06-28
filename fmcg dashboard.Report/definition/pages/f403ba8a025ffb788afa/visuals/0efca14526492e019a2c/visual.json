@@ -23,11 +23,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "KPI_PriceMixEffect"
+                  "Property": "KPI_RevenueGrowthMoM"
                 }
               },
               "queryRef": "_Measures.KPI_PriceMixEffect",
-              "nativeQueryRef": "KPI_PriceMixEffect"
+              "nativeQueryRef": "KPI_RevenueGrowthMoM"
             }
           ]
         }

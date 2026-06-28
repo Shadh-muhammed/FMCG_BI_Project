@@ -1,13 +1,13 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
-  "name": "a2a30bff707041577c22",
+  "name": "ab925920152497df2ea4",
   "position": {
-    "x": 639.41353580311556,
+    "x": 12.06440633590784,
     "y": 493.43421913863068,
-    "z": 6,
+    "z": 7,
     "height": 217.15931404634114,
-    "width": 632.17489200157081,
-    "tabOrder": 6
+    "width": 618.90404503207219,
+    "tabOrder": 7
   },
   "visual": {
     "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
@@ -23,11 +23,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "HTML_ItemVisibilityByOutlet"
+                  "Property": "HTML_RevenueBridge"
                 }
               },
-              "queryRef": "_Measures.HTML_ItemVisibilityByOutlet",
-              "nativeQueryRef": "HTML_ItemVisibilityByOutlet"
+              "queryRef": "_Measures.HTML_RevenueBridge",
+              "nativeQueryRef": "HTML_RevenueBridge"
             }
           ]
         }
