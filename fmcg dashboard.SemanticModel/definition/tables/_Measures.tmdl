@@ -2527,48 +2527,6 @@ table _Measures
 			</div>"
 		lineageTag: d794da79-c2d9-4c03-8f18-52b6a4fa7816
 
-	measure 'REVENUE BRIDGE VALUES' =
-			
-			VAR OctRevenue = 8.2
-			VAR Volume     = 0.8
-			VAR Price      = 0.8
-			VAR Mix        = -0.2
-			VAR Promo      = -0.2
-			
-			VAR NovRevenue = OctRevenue + Volume + Price + Mix + Promo
-			VAR Run1 = OctRevenue
-			VAR Run2 = Run1 + Volume
-			VAR Run3 = Run2 + Price
-			VAR Run4 = Run3 + Mix
-			VAR Run5 = Run4 + Promo
-			VAR YMin = 7.5
-			VAR YMax = 10.5
-			VAR ChartHeight = 260
-			
-			VAR Scale =
-			    DIVIDE(ChartHeight, YMax - YMin)
-			
-			VAR Y_Oct    = ChartHeight - (Run1 - YMin) * Scale
-			VAR Y_Run2   = ChartHeight - (Run2 - YMin) * Scale
-			VAR Y_Run3   = ChartHeight - (Run3 - YMin) * Scale
-			VAR Y_Run4   = ChartHeight - (Run4 - YMin) * Scale
-			VAR Y_Run5   = ChartHeight - (Run5 - YMin) * Scale
-			VAR Y_Nov    = ChartHeight - (NovRevenue - YMin) * Scale
-			VAR X1 = 55
-			VAR X2 = 150
-			VAR X3 = 245
-			VAR X4 = 340
-			VAR X5 = 435
-			VAR X6 = 530
-			
-			VAR BarWidth = 42
-			VAR TotalColor = "#2F6FAE"
-			VAR Positive = "#0E7C66"
-			VAR Negative = "#D9534F"
-			VAR Connector = "#BFBFBF"
-			VAR Dot = "#E39B18"
-		lineageTag: b65cac97-f0c9-4e5e-b9ab-0b361e1b1256
-
 	measure HTML_RevenueBridge = ```
 			
 			
@@ -2882,11 +2840,11 @@ table _Measures
 
 	measure 'Promo Bar Chart Card' =
 			
-			VAR ChartH = 90
-			VAR BarW = 16
+			VAR ChartH = 42
+			VAR BarW = 14
 			VAR BarGap = 2
-			VAR GroupW = 70
-			VAR StartX = 20
+			VAR GroupW = 55
+			VAR StartX = 15
 			VAR Categories = VALUES(Dim_Product[category])
 			VAR MaxVal =
 			    MAXX(
@@ -2923,13 +2881,13 @@ table _Measures
 			"<div style='background:#ffffff;border-radius:6px;padding:14px;font-family:sans-serif'>" &
 			"<div style='font-size:12px;font-weight:600;color:#1a1a1a;margin-bottom:2px'>Baseline vs promoted units &middot; by category</div>" &
 			"<div style='font-size:10px;color:#9a9a92;margin-bottom:10px'>Avg units sold</div>" &
-			"<svg viewBox='0 0 300 120' xmlns='http://www.w3.org/2000/svg'>" &
+			"<svg viewBox='0 0 300 105' xmlns='http://www.w3.org/2000/svg'>"  &
 			Bars &
-			"<g transform='translate(235,15)'>" &
-			"<rect width='8' height='8' fill='#cfe4d6'/><text x='12' y='8' font-size='8' fill='#3f7a53'>baseline</text>" &
-			"<rect y='14' width='8' height='8' fill='#1f6b45'/><text x='12' y='22' font-size='8' fill='#1f6b45'>promoted</text>" &
+			"<g transform='translate(245,8)'>" &
+			"<rect width='6' height='6' fill='#cfe4d6'/><text x='9' y='6' font-size='6.5' fill='#3f7a53'>baseline</text>" &
+			"<rect y='11' width='6' height='6' fill='#1f6b45'/><text x='9' y='17' font-size='6.5' fill='#1f6b45'>promoted</text>" &
 			"</g></svg>" &
-			"<div style='background:#fbe4e4;border-radius:4px;padding:8px 10px;margin-top:8px;font-size:10.5px;color:#8a2f2f;line-height:1.5'>&#10022; " &
+			"<div style='background:#fbe4e4;border-radius:4px;padding:8px 10px;margin-top:4px;font-size:10.5px;color:#8a2f2f;line-height:1.5'>&#10022; " &
 			InsightText &
 			"</div>" &
 			"</div>"
