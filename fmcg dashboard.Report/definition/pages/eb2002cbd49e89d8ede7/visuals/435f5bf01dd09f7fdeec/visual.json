@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "435f5bf01dd09f7fdeec",
+  "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0,
+    "height": 330.16479579651303,
+    "width": 454.89371865297352,
+    "tabOrder": 0
+  },
+  "visual": {
+    "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+    "query": {
+      "queryState": {
+        "content": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Promo Bar Chart Card"
+                }
+              },
+              "queryRef": "_Measures.Promo Bar Chart SVG",
+              "nativeQueryRef": "Promo Bar Chart Card"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

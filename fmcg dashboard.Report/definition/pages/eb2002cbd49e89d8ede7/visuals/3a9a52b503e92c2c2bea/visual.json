@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "3a9a52b503e92c2c2bea",
+  "position": {
+    "x": 465,
+    "y": 0,
+    "z": 2,
+    "height": 330,
+    "width": 455,
+    "tabOrder": 2
+  },
+  "visual": {
+    "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+    "query": {
+      "queryState": {
+        "content": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Stock Risk Scatter Card"
+                }
+              },
+              "queryRef": "_Measures.Stock Risk Scatter Card",
+              "nativeQueryRef": "Stock Risk Scatter Card"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

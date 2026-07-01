@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "56e7881ebf09599363d4",
+  "position": {
+    "x": 464.67637926916649,
+    "y": 339.947456412706,
+    "z": 3,
+    "height": 92.935275853833289,
+    "width": 454.89371865297352,
+    "tabOrder": 3
+  },
+  "visual": {
+    "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+    "query": {
+      "queryState": {
+        "content": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Stock Risk Callout Card"
+                }
+              },
+              "queryRef": "_Measures.Stock Risk Callout Card",
+              "nativeQueryRef": "Stock Risk Callout Card"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

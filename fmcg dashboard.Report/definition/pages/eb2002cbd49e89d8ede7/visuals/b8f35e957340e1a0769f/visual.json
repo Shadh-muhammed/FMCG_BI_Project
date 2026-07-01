@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "b8f35e957340e1a0769f",
+  "position": {
+    "x": 931,
+    "y": 517,
+    "z": 8,
+    "height": 150,
+    "width": 349,
+    "tabOrder": 8
+  },
+  "visual": {
+    "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+    "query": {
+      "queryState": {
+        "content": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "KPI Card Promo Frequency"
+                }
+              },
+              "queryRef": "_Measures.KPI Card Promo Frequency",
+              "nativeQueryRef": "KPI Card Promo Frequency"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

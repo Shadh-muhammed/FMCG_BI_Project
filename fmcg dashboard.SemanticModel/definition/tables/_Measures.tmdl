@@ -2817,6 +2817,475 @@ table _Measures
 			```
 		lineageTag: 5f316d46-c14f-4d84-a3b6-b0bf12fe77ae
 
+	measure 'Avg Units Sold' = AVERAGE(Fact[units_sold])
+		lineageTag: 20f0b06d-b6d6-489b-9ff2-a995d6865987
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Baseline Sales' = ```
+			CALCULATE([Avg Units Sold], Fact[promotion_flag] = 0)
+			
+			```
+		lineageTag: a86895ee-d85b-4b2c-ad93-47d272530b01
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Promoted Sales' = ```
+			CALCULATE([Avg Units Sold], Fact[promotion_flag] = 1)
+			
+			```
+		lineageTag: 2b9b6273-5dab-41ad-92f8-febac59cfe5f
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Promo Lift %' = ```
+			DIVIDE([Promoted Sales] - [Baseline Sales], [Baseline Sales])
+			
+			
+			```
+		lineageTag: 260bc637-5b27-4d40-94a9-5cccf4674759
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Promo Frequency %' = ```
+			
+			DIVIDE(
+			    CALCULATE(COUNTROWS('Fact'), Fact[promotion_flag] = 1),
+			    COUNTROWS('Fact')
+			)
+			
+			
+			```
+		lineageTag: 256f7ccd-066c-4919-8bfe-6c8966ccf12b
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Overall Promo ROI' = ```
+			
+			VAR PromotedTotal = CALCULATE([Avg Units Sold], Fact[promotion_flag] = 1, ALLSELECTED())
+			VAR BaselineTotal = CALCULATE([Avg Units Sold], Fact[promotion_flag] = 0, ALLSELECTED())
+			RETURN DIVIDE(PromotedTotal, BaselineTotal)
+			
+			
+			```
+		lineageTag: 5c725812-da05-4a76-b7ba-da6cb4ada852
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Revenue at Risk SKUs' =
+			
+			COUNTROWS(
+			    FILTER(VALUES(Dim_Product[sku]), CALCULATE([Promo Lift %]) < 0.05)
+			)
+		formatString: 0
+		lineageTag: 53e368fb-4d3a-47d1-9fe3-7cbbfe13b8f1
+
+	measure 'Promo Bar Chart Card' =
+			
+			VAR ChartH = 90
+			VAR BarW = 16
+			VAR BarGap = 2
+			VAR GroupW = 70
+			VAR StartX = 20
+			VAR Categories = VALUES(Dim_Product[category])
+			VAR MaxVal =
+			    MAXX(
+			        Categories,
+			        MAX(CALCULATE([Baseline Sales]), CALCULATE([Promoted Sales]))
+			    )
+			VAR Bars =
+			    CONCATENATEX(
+			        Categories,
+			        VAR CatRank = RANKX(ALL(Dim_Product[category]), Dim_Product[category], , ASC, Dense) - 1
+			        VAR XPos = StartX + CatRank * GroupW
+			        VAR Baseline = CALCULATE([Baseline Sales])
+			        VAR Promoted = CALCULATE([Promoted Sales])
+			        VAR BaseH = DIVIDE(Baseline, MaxVal) * ChartH
+			        VAR PromH = DIVIDE(Promoted, MaxVal) * ChartH
+			        RETURN
+			        "<rect x='" & XPos & "' y='" & FORMAT(100 - BaseH, "0.0") & "' width='" & BarW & "' height='" & FORMAT(BaseH, "0.0") & "' fill='#cfe4d6'/>" &
+			        "<rect x='" & (XPos + BarW + BarGap) & "' y='" & FORMAT(100 - PromH, "0.0") & "' width='" & BarW & "' height='" & FORMAT(PromH, "0.0") & "' fill='#1f6b45'/>" &
+			        "<text x='" & (XPos + BarW) & "' y='112' text-anchor='middle' font-size='8' fill='#3f7a53'>" & Dim_Product[category] & "</text>",
+			        "",
+			        RANKX(ALL(Dim_Product[category]), Dim_Product[category], , ASC, Dense), ASC
+			    )
+			VAR WeakestCat =
+			    MINX(
+			        TOPN(1, Categories, CALCULATE([Promo Lift %]), ASC),
+			        Dim_Product[category]
+			    )
+			VAR WeakestLift = CALCULATE([Promo Lift %], Dim_Product[category] = WeakestCat)
+			VAR InsightText =
+			    WeakestCat & " category shows the weakest incremental lift at " &
+			    FORMAT(WeakestLift, "0.0%") &
+			    " — promoted volume barely clears baseline, signalling promo fatigue."
+			RETURN
+			"<div style='background:#ffffff;border-radius:6px;padding:14px;font-family:sans-serif'>" &
+			"<div style='font-size:12px;font-weight:600;color:#1a1a1a;margin-bottom:2px'>Baseline vs promoted units &middot; by category</div>" &
+			"<div style='font-size:10px;color:#9a9a92;margin-bottom:10px'>Avg units sold</div>" &
+			"<svg viewBox='0 0 300 120' xmlns='http://www.w3.org/2000/svg'>" &
+			Bars &
+			"<g transform='translate(235,15)'>" &
+			"<rect width='8' height='8' fill='#cfe4d6'/><text x='12' y='8' font-size='8' fill='#3f7a53'>baseline</text>" &
+			"<rect y='14' width='8' height='8' fill='#1f6b45'/><text x='12' y='22' font-size='8' fill='#1f6b45'>promoted</text>" &
+			"</g></svg>" &
+			"<div style='background:#fbe4e4;border-radius:4px;padding:8px 10px;margin-top:8px;font-size:10.5px;color:#8a2f2f;line-height:1.5'>&#10022; " &
+			InsightText &
+			"</div>" &
+			"</div>"
+		lineageTag: 9a0aaf00-5f21-4eb8-adeb-be082d09e244
+
+	measure 'Promo Scatter Card' =
+			
+			VAR PlotW = 260
+			VAR PlotH = 82
+			VAR OriginX = 30
+			VAR OriginY = 8
+			VAR SKUs = VALUES(Dim_Product[sku])
+			VAR LiftThreshold = 0.05
+			VAR FreqThreshold =
+			    PERCENTILEX.INC(SKUs, CALCULATE([Promo Frequency %]), 0.5)
+			VAR MinFreq = MINX(SKUs, CALCULATE([Promo Frequency %]))
+			VAR MaxFreq = MAXX(SKUs, CALCULATE([Promo Frequency %]))
+			VAR MinLift = MINX(SKUs, CALCULATE([Promo Lift %]))
+			VAR MaxLift = MAXX(SKUs, CALCULATE([Promo Lift %]))
+			VAR FreqRange = MaxFreq - MinFreq
+			VAR LiftRange = MaxLift - MinLift
+			VAR ZeroY = OriginY + PlotH - DIVIDE(0 - MinLift, LiftRange) * PlotH
+			VAR Points =
+			    CONCATENATEX(
+			        SKUs,
+			        VAR Freq = CALCULATE([Promo Frequency %])
+			        VAR Lift = CALCULATE([Promo Lift %])
+			        VAR CX = OriginX + DIVIDE(Freq - MinFreq, FreqRange) * PlotW
+			        VAR CY = OriginY + PlotH - DIVIDE(Lift - MinLift, LiftRange) * PlotH
+			        VAR Color =
+			            SWITCH(
+			                TRUE(),
+			                Freq >= FreqThreshold && Lift >= LiftThreshold, "#1f6b45",
+			                Freq >= FreqThreshold && Lift < LiftThreshold, "#c0392b",
+			                "#c9932e"
+			            )
+			        RETURN
+			        "<circle cx='" & FORMAT(CX, "0.0") & "' cy='" & FORMAT(CY, "0.0") & "' r='4.5' fill='" & Color & "'/>",
+			        ""
+			    )
+			VAR RiskCount =
+			    COUNTX(
+			        FILTER(SKUs, CALCULATE([Promo Frequency %]) >= FreqThreshold && CALCULATE([Promo Lift %]) < LiftThreshold),
+			        Dim_Product[sku]
+			    )
+			VAR RiskSpend =
+			    SUMX(
+			        FILTER(SKUs, CALCULATE([Promo Frequency %]) >= FreqThreshold && CALCULATE([Promo Lift %]) < LiftThreshold),
+			        CALCULATE(SUMX('Fact', Fact[units_sold] * Fact[price_unit]), Fact[promotion_flag] = 1)
+			    )
+			VAR InsightText =
+			    RiskCount & " SKUs sit high-frequency, low-lift — repeated discounting with no incremental gain, ~AED " &
+			    FORMAT(RiskSpend / 1000000, "0.0") & "M trade spend at risk."
+			RETURN
+			"<div style='background:#ffffff;border-radius:6px;padding:14px;font-family:sans-serif'>" &
+			"<div style='font-size:12px;font-weight:600;color:#1a1a1a;margin-bottom:2px'>Promo frequency vs promo lift &middot; by SKU</div>" &
+			"<div style='font-size:10px;color:#9a9a92;margin-bottom:10px'>Bottom right = discount dependency</div>" &
+			"<svg viewBox='0 0 300 100' xmlns='http://www.w3.org/2000/svg'>" &
+			"<line x1='" & OriginX & "' y1='" & OriginY & "' x2='" & OriginX & "' y2='90' stroke='#e2e0d8' stroke-width='1'/>" &
+			"<line x1='" & OriginX & "' y1='" & FORMAT(ZeroY, "0.0") & "' x2='290' y2='" & FORMAT(ZeroY, "0.0") & "' stroke='#e2e0d8' stroke-width='1'/>" &
+			"<text x='288' y='" & FORMAT(ZeroY - 6, "0.0") & "' text-anchor='end' font-size='7.5' fill='#1f6b45'>good investment</text>" &
+			"<text x='288' y='" & FORMAT(ZeroY + 12, "0.0") & "' text-anchor='end' font-size='7.5' fill='#b23b3b'>discount dependency</text>" &
+			Points &
+			"</svg>" &
+			"<div style='background:#fbe4e4;border-radius:4px;padding:8px 10px;margin-top:8px;font-size:10.5px;color:#8a2f2f;line-height:1.5'>&#10022; " &
+			InsightText &
+			"</div>" &
+			"</div>"
+		lineageTag: ad17ef96-5b26-4e63-bb8f-ddd60171de62
+
+	measure 'Stock Risk Scatter Card' =
+			
+			VAR PlotW = 260
+			VAR PlotH = 82
+			VAR OriginX = 30
+			VAR OriginY = 8
+			VAR SKUs = VALUES(Dim_Product[sku])
+			VAR MinStock = MINX(SKUs, CALCULATE(AVERAGE(Fact[stock_available])))
+			VAR MaxStock = MAXX(SKUs, CALCULATE(AVERAGE(Fact[stock_available])))
+			VAR MinDemand = MINX(SKUs, CALCULATE([Avg Units Sold]))
+			VAR MaxDemand = MAXX(SKUs, CALCULATE([Avg Units Sold]))
+			VAR StockRange = MaxStock - MinStock
+			VAR DemandRange = MaxDemand - MinDemand
+			VAR StockThreshold = PERCENTILEX.INC(SKUs, CALCULATE(AVERAGE(Fact[stock_available])), 0.25)
+			VAR DemandThreshold = PERCENTILEX.INC(SKUs, CALCULATE([Avg Units Sold]), 0.60)
+			VAR Points =
+			    CONCATENATEX(
+			        SKUs,
+			        VAR Stock = CALCULATE(AVERAGE(Fact[stock_available]))
+			        VAR Demand = CALCULATE([Avg Units Sold])
+			        VAR CX = OriginX + DIVIDE(Stock - MinStock, StockRange) * PlotW
+			        VAR CY = OriginY + PlotH - DIVIDE(Demand - MinDemand, DemandRange) * PlotH
+			        VAR IsRisk = Stock <= StockThreshold && Demand >= DemandThreshold
+			        RETURN
+			        "<circle cx='" & FORMAT(CX, "0.0") & "' cy='" & FORMAT(CY, "0.0") & "' r='" & IF(IsRisk, 5.5, 4.5) & "' fill='" & IF(IsRisk, "#c0392b", "#cfe4d6") & "'/>",
+			        ""
+			    )
+			VAR RiskCount =
+			    COUNTX(
+			        FILTER(SKUs, CALCULATE(AVERAGE(Fact[stock_available])) <= StockThreshold && CALCULATE([Avg Units Sold]) >= DemandThreshold),
+			        Dim_Product[sku]
+			    )
+			VAR InsightText =
+			    RiskCount & " SKUs sit in the stockout alert zone — high rolling demand against thin available stock."
+			RETURN
+			"<div style='background:#ffffff;border-radius:6px;padding:14px;font-family:sans-serif'>" &
+			"<div style='font-size:12px;font-weight:600;color:#1a1a1a;margin-bottom:2px'>Stock risk matrix</div>" &
+			"<div style='font-size:10px;color:#9a9a92;margin-bottom:10px'>Demand vs stock available</div>" &
+			"<svg viewBox='0 0 300 100' xmlns='http://www.w3.org/2000/svg'>" &
+			"<line x1='" & OriginX & "' y1='" & OriginY & "' x2='" & OriginX & "' y2='90' stroke='#e2e0d8' stroke-width='1'/>" &
+			"<line x1='" & OriginX & "' y1='90' x2='290' y2='90' stroke='#e2e0d8' stroke-width='1'/>" &
+			Points &
+			"</svg>" &
+			"<div style='background:#fbe4e4;border-radius:4px;padding:8px 10px;margin-top:8px;font-size:10.5px;color:#8a2f2f;line-height:1.5'>&#10022; " &
+			InsightText &
+			"</div>" &
+			"</div>"
+		lineageTag: 9e0f9f5c-54e8-4a7d-8a50-7197027d25dd
+
+	measure 'PostPromoDip %' =
+			
+			VAR LastPromoDate = CALCULATE(MAX(Fact[date]), Fact[promotion_flag] = 1)
+			VAR PostAvg =
+			    CALCULATE([Avg Units Sold], Fact[date] > LastPromoDate && Fact[date] <= LastPromoDate + 28)
+			RETURN DIVIDE(PostAvg - [Baseline Sales], [Baseline Sales])
+		lineageTag: 0ef6da53-2348-454f-8501-1af18de42c1d
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Stock Risk Callout Card' =
+			
+			VAR Combos = SUMMARIZE('Fact', Fact[region], Fact[channel])
+			VAR RankedCombos =
+			    ADDCOLUMNS(
+			        Combos,
+			        "@Rate", CALCULATE(DIVIDE(CALCULATE(COUNTROWS(Fact), Fact[stock_available] <= 5), COUNTROWS(Fact)))
+			    )
+			VAR TopCombo = TOPN(1, RankedCombos, [@Rate], DESC)
+			VAR TopRegion = MAXX(TopCombo, Fact[region])
+			VAR TopChannel = MAXX(TopCombo, Fact[channel])
+			VAR TopRate = MAXX(TopCombo, [@Rate])
+			VAR InsightText =
+			    TopRegion & " region " & TopChannel & " channel shows a " & FORMAT(TopRate, "0%") &
+			    " stockout rate. Raise safety stock for the top 5 SKUs before the next peak period."
+			RETURN
+			"<div style='background:#ffffff;border-radius:6px;padding:12px 14px;border-left:3px solid #c0392b;font-family:sans-serif'>" &
+			"<div style='font-size:11px;font-weight:600;color:#8a2f2f;margin-bottom:4px'>Stock risk</div>" &
+			"<div style='font-size:10.5px;color:#4a4a44;line-height:1.55'>" & InsightText & "</div></div>"
+		lineageTag: 80dd9fe3-c0ac-4874-b6ca-83cc17b5b5d4
+
+	measure 'Budget Shift Callout Card' =
+			
+			VAR ChannelROI = ADDCOLUMNS(VALUES(Fact[channel]), "@ROI", CALCULATE([Overall Promo ROI]))
+			VAR BestChannel = TOPN(1, ChannelROI, [@ROI], DESC)
+			VAR WorstChannel = TOPN(1, ChannelROI, [@ROI], ASC)
+			VAR BestName = MAXX(BestChannel, Fact[channel])
+			VAR BestROI = MAXX(BestChannel, [@ROI])
+			VAR WorstName = MAXX(WorstChannel, Fact[channel])
+			VAR WorstROI = MAXX(WorstChannel, [@ROI])
+			VAR Multiple = DIVIDE(BestROI, WorstROI)
+			VAR InsightText =
+			    "Promo ROI in " & BestName & " is " & FORMAT(Multiple, "0.0") & "x higher than " & WorstName &
+			    " channel. Shift 20% of trade budget from " & WorstName & " to " & BestName & " in H1."
+			RETURN
+			"<div style='background:#ffffff;border-radius:6px;padding:12px 14px;border-left:3px solid #1f6b45;font-family:sans-serif'>" &
+			"<div style='font-size:11px;font-weight:600;color:#1f6b45;margin-bottom:4px'>Budget shift</div>" &
+			"<div style='font-size:10.5px;color:#4a4a44;line-height:1.55'>" & InsightText & "</div></div>"
+		lineageTag: a5dfcbb1-8686-45ce-84f2-6b97ed034719
+
+	measure 'Seasonality Callout Card' =
+			
+			VAR TopSKU = MAXX(TOPN(1, VALUES(Dim_Product[sku]), CALCULATE([Avg Units Sold]), DESC), Dim_Product[sku])
+			VAR MonthlyAvg =
+			    ADDCOLUMNS(
+			        VALUES(Dim_Date[month_name]),
+			        "@U", CALCULATE([Avg Units Sold], Dim_Product[sku] = TopSKU)
+			    )
+			VAR PeakMonth = MAXX(TOPN(1, MonthlyAvg, [@U], DESC), Dim_Date[month_name])
+			VAR PeakVal = MAXX(TOPN(1, MonthlyAvg, [@U], DESC), [@U])
+			VAR TroughMonth = MAXX(TOPN(1, MonthlyAvg, [@U], ASC), Dim_Date[month_name])
+			VAR TroughVal = MAXX(TOPN(1, MonthlyAvg, [@U], ASC), [@U])
+			VAR DropPct = DIVIDE(PeakVal - TroughVal, PeakVal)
+			VAR InsightText =
+			    TopSKU & " demand peaks in " & PeakMonth & " and drops " & FORMAT(DropPct, "0%") &
+			    " by " & TroughMonth & ". Align production and distribution to this seasonal pattern."
+			RETURN
+			"<div style='background:#ffffff;border-radius:6px;padding:12px 14px;border-left:3px solid #c9932e;font-family:sans-serif'>" &
+			"<div style='font-size:11px;font-weight:600;color:#a3641f;margin-bottom:4px'>Seasonality</div>" &
+			"<div style='font-size:10.5px;color:#4a4a44;line-height:1.55'>" & InsightText & "</div></div>"
+		lineageTag: d0a9b41b-b1e8-4743-9908-129897bb1a77
+
+	measure 'Units This Month' = SUM(Fact[units_sold])
+		formatString: 0
+		lineageTag: bd0ed9e1-0d7e-4130-9439-0120b97f482b
+
+	measure 'Units Prior Month' = ```
+			
+			CALCULATE(
+			    [Units This Month],
+			    DATEADD(Dim_Date[date], -1, MONTH)
+			)
+			
+			```
+		formatString: 0
+		lineageTag: 1c9144e2-4845-47e4-8ea7-c2c8b74a247e
+
+	measure 'Momentum %' =
+			
+			DIVIDE(
+			    [Units This Month] - [Units Prior Month],
+			    [Units Prior Month]
+			)
+		lineageTag: 5e001419-c5fe-478b-bf31-f3be1bfef93d
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Momentum Table Card' =
+			
+			VAR MomentumBySKU = ADDCOLUMNS(VALUES(Dim_Product[sku]), "@M", CALCULATE([Momentum %]))
+			VAR TopAccel = TOPN(2, MomentumBySKU, [@M], DESC)
+			VAR TopDecel = TOPN(2, MomentumBySKU, [@M], ASC)
+			VAR TopAccelBest = MAXX(TopAccel, [@M])
+			VAR TopDecelWorst = MINX(TopDecel, [@M])
+			VAR AccelRows =
+			    CONCATENATEX(
+			        TopAccel,
+			        VAR SKUName = [sku]
+			        VAR MVal = [@M]
+			        VAR ActionText = IF(MVal = TopAccelBest, "expand distro", "increase stock")
+			        RETURN
+			        "<tr><td style='padding:5px 0;color:#1f6b45'>&#9650; " & SKUName & "</td><td style='text-align:right;color:#1a1a1a'>" & FORMAT(MVal, "+0.0%;-0.0%") & "</td><td style='text-align:right;color:#6b6b63'>" & ActionText & "</td></tr>",
+			        "", [@M], DESC
+			    )
+			VAR DecelRows =
+			    CONCATENATEX(
+			        TopDecel,
+			        VAR SKUName = [sku]
+			        VAR MVal = [@M]
+			        VAR ActionText = IF(MVal = TopDecelWorst, "review promo", "reduce SKU count")
+			        RETURN
+			        "<tr><td style='padding:5px 0;color:#b23b3b'>&#9660; " & SKUName & "</td><td style='text-align:right;color:#1a1a1a'>" & FORMAT(MVal, "+0.0%;-0.0%") & "</td><td style='text-align:right;color:#6b6b63'>" & ActionText & "</td></tr>",
+			        "", [@M], ASC
+			    )
+			VAR TopAccelSKU = MAXX(TOPN(1, TopAccel, [@M], DESC), [sku])
+			VAR TopAccelPromoLift = CALCULATE([Promo Lift %], Dim_Product[sku] = TopAccelSKU)
+			VAR TopAccelDip = CALCULATE([PostPromoDip %], Dim_Product[sku] = TopAccelSKU)
+			VAR InsightText =
+			    TopAccelSKU & " spiked " & FORMAT(TopAccelPromoLift, "0%") &
+			    " during promo but ran " & FORMAT(ABS(TopAccelDip), "0%") &
+			    IF(TopAccelDip < 0, " below", " above") & " baseline for the 4 weeks after — " &
+			    IF(TopAccelDip < 0, "classic pantry loading, volume borrowed not incremental.", "sustained lift, incremental volume likely.")
+			RETURN
+			"<div style='background:#ffffff;border-radius:6px;padding:14px;font-family:sans-serif'>" &
+			"<div style='font-size:12px;font-weight:600;color:#1a1a1a;margin-bottom:10px'>Momentum leaders &amp; laggards</div>" &
+			"<table style='width:100%;font-size:10.5px;border-collapse:collapse'>" &
+			"<tr style='color:#9a9a92'><td style='padding:4px 0'>SKU</td><td style='text-align:right'>momentum</td><td style='text-align:right'>action</td></tr>" &
+			AccelRows & DecelRows &
+			"</table>" &
+			"<div style='background:#fbe4e4;border-radius:4px;padding:8px 10px;margin-top:10px;font-size:10.5px;color:#8a2f2f;line-height:1.5'>&#10022; " &
+			InsightText & "</div></div>"
+		lineageTag: e5310e9c-3341-4eb1-8c58-e4429f0aa08b
+
+	measure 'Stockout Risk SKU Count' = ```
+			
+			VAR SKUs = VALUES(Dim_Product[sku])
+			VAR StockThreshold = PERCENTILEX.INC(SKUs, CALCULATE(AVERAGE(Fact[stock_available])), 0.25)
+			VAR DemandThreshold = PERCENTILEX.INC(SKUs, CALCULATE([Avg Units Sold]), 0.60)
+			RETURN
+			COUNTX(
+			    FILTER(SKUs, CALCULATE(AVERAGE(Fact[stock_available])) <= StockThreshold && CALCULATE([Avg Units Sold]) >= DemandThreshold),
+			    Dim_Product[sku]
+			)
+			
+			```
+		formatString: 0
+		lineageTag: 1e81ee3e-8758-4e4b-a927-c7e98303b565
+
+	measure 'Forecast Trend %' =
+			
+			VAR LastFactDate = MAX(Fact[date])
+			VAR Last4Wk =
+			    CALCULATE(
+			        [Units This Month],
+			        Fact[date] > LastFactDate - 28 && Fact[date] <= LastFactDate
+			    )
+			VAR Prior4Wk =
+			    CALCULATE(
+			        [Units This Month],
+			        Fact[date] > LastFactDate - 56 && Fact[date] <= LastFactDate - 28
+			    )
+			RETURN
+			DIVIDE(Last4Wk - Prior4Wk, Prior4Wk)
+		lineageTag: a0d5bcb5-9790-4cfc-9ce3-fc4cee90afcc
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'KPI Card Promo ROI' =
+			
+			VAR ROI = [Overall Promo ROI]
+			VAR IsGood = ROI >= 1
+			VAR BadgeColor = IF(IsGood, "#1f6b45", "#b23b3b")
+			VAR BadgeBg = IF(IsGood, "#e2f0e5", "#fbe4e4")
+			VAR BadgeText = IF(IsGood, "&#9650; vs baseline", "&#9660; below baseline")
+			RETURN
+			"<div style='background:#ffffff;border-radius:6px;padding:12px 14px;font-family:sans-serif'>" &
+			"<div style='font-size:10px;letter-spacing:0.05em;color:#8a8a82;text-transform:uppercase'>Overall promo ROI</div>" &
+			"<div style='font-size:22px;font-weight:600;color:#1a1a1a;margin-top:4px'>" & FORMAT(ROI, "0.0") & "x</div>" &
+			"<div style='display:inline-block;margin-top:6px;font-size:10px;color:" & BadgeColor & ";background:" & BadgeBg & ";padding:2px 7px;border-radius:4px'>" & BadgeText & "</div>" &
+			"</div>"
+		lineageTag: b63a114d-a0f4-4421-8910-ff36aa5f6219
+
+	measure 'KPI Card Promo Frequency' =
+			
+			VAR Freq = [Promo Frequency %]
+			VAR IsOverPromoted = Freq > 0.30
+			VAR BadgeColor = IF(IsOverPromoted, "#a3641f", "#1f6b45")
+			VAR BadgeBg = IF(IsOverPromoted, "#faf1e0", "#e2f0e5")
+			VAR BadgeText = IF(IsOverPromoted, "over-promoted", "healthy mix")
+			RETURN
+			"<div style='background:#ffffff;border-radius:6px;padding:12px 14px;font-family:sans-serif'>" &
+			"<div style='font-size:10px;letter-spacing:0.05em;color:#8a8a82;text-transform:uppercase'>Promo frequency</div>" &
+			"<div style='font-size:22px;font-weight:600;color:#1a1a1a;margin-top:4px'>" & FORMAT(Freq, "0%") & "</div>" &
+			"<div style='display:inline-block;margin-top:6px;font-size:10px;color:" & BadgeColor & ";background:" & BadgeBg & ";padding:2px 7px;border-radius:4px'>" & BadgeText & "</div>" &
+			"</div>"
+		lineageTag: 13ed4edc-6dcf-4bae-84e4-76f4d5511265
+
+	measure 'KPI Card Stockout Risk' =
+			
+			VAR RiskCount = [Stockout Risk SKU Count]
+			VAR HasRisk = RiskCount > 0
+			VAR BadgeColor = IF(HasRisk, "#b23b3b", "#1f6b45")
+			VAR BadgeBg = IF(HasRisk, "#fbe4e4", "#e2f0e5")
+			VAR BadgeText = IF(HasRisk, "action required", "no risk")
+			RETURN
+			"<div style='background:#ffffff;border-radius:6px;padding:12px 14px;font-family:sans-serif'>" &
+			"<div style='font-size:10px;letter-spacing:0.05em;color:#8a8a82;text-transform:uppercase'>SKUs at stockout risk</div>" &
+			"<div style='font-size:22px;font-weight:600;color:#1a1a1a;margin-top:4px'>" & RiskCount & "</div>" &
+			"<div style='display:inline-block;margin-top:6px;font-size:10px;color:" & BadgeColor & ";background:" & BadgeBg & ";padding:2px 7px;border-radius:4px'>" & BadgeText & "</div>" &
+			"</div>"
+		lineageTag: 3525fb8f-3862-4d5e-a999-6aaa3f935cd9
+
+	measure 'KPI Card Forecast Trend' =
+			
+			VAR Trends = [Forecast Trend %]
+			VAR IsUp = Trends >= 0
+			VAR BadgeColor = IF(IsUp, "#1f6b45", "#b23b3b")
+			VAR BadgeBg = IF(IsUp, "#e2f0e5", "#fbe4e4")
+			VAR BadgeText = IF(IsUp, "&#9650; vs current run rate", "&#9660; vs current run rate")
+			RETURN
+			"<div style='background:#ffffff;border-radius:6px;padding:12px 14px;font-family:sans-serif'>" &
+			"<div style='font-size:10px;letter-spacing:0.05em;color:#8a8a82;text-transform:uppercase'>4-week forecast</div>" &
+			"<div style='font-size:22px;font-weight:600;color:#1a1a1a;margin-top:4px'>" & FORMAT(Trends, "+0.0%;-0.0%") & "</div>" &
+			"<div style='display:inline-block;margin-top:6px;font-size:10px;color:" & BadgeColor & ";background:" & BadgeBg & ";padding:2px 7px;border-radius:4px'>" & BadgeText & "</div>" &
+			"</div>"
+		lineageTag: 5c09ad78-785b-4793-b359-461409d57abf
+
 	partition _Measures = m
 		mode: import
 		source =

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "5c8bf1195204e7c48205",
+  "position": {
+    "x": 464.67637926916649,
+    "y": 432.88273226653928,
+    "z": 4,
+    "height": 84.37544781466444,
+    "width": 454.89371865297352,
+    "tabOrder": 4
+  },
+  "visual": {
+    "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+    "query": {
+      "queryState": {
+        "content": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Budget Shift Callout Card"
+                }
+              },
+              "queryRef": "_Measures.Budget Shift Callout Card",
+              "nativeQueryRef": "Budget Shift Callout Card"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

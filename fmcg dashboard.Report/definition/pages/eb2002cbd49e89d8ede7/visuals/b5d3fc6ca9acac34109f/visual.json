@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "b5d3fc6ca9acac34109f",
+  "position": {
+    "x": 387.63792691664679,
+    "y": 386.41509433962267,
+    "z": 9,
+    "height": 13.451158347265345,
+    "width": 12.228325770241224,
+    "tabOrder": 9
+  },
+  "visual": {
+    "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+    "query": {
+      "queryState": {
+        "content": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "KPI Card Stockout Risk"
+                }
+              },
+              "queryRef": "_Measures.KPI Card Stockout Risk",
+              "nativeQueryRef": "KPI Card Stockout Risk"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

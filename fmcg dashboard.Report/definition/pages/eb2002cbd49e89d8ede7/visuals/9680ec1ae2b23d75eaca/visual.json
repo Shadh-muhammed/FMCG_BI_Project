@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "9680ec1ae2b23d75eaca",
+  "position": {
+    "x": 100.27227131597803,
+    "y": 100.27227131597803,
+    "z": 10,
+    "height": 106.38643420109864,
+    "width": 299.59398137090994,
+    "tabOrder": 10
+  },
+  "visual": {
+    "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+    "query": {
+      "queryState": {
+        "content": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "KPI Card Forecast Trend"
+                }
+              },
+              "queryRef": "_Measures.KPI Card Forecast Trend",
+              "nativeQueryRef": "KPI Card Forecast Trend"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

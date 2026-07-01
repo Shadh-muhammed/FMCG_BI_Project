@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "e1eb43ced6279bbb0685",
+  "position": {
+    "x": 464.67637926916649,
+    "y": 517.2581800812037,
+    "z": 5,
+    "height": 88.0439455457368,
+    "width": 454.89371865297352,
+    "tabOrder": 5
+  },
+  "visual": {
+    "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+    "query": {
+      "queryState": {
+        "content": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Seasonality Callout Card"
+                }
+              },
+              "queryRef": "_Measures.Seasonality Callout Card",
+              "nativeQueryRef": "Seasonality Callout Card"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

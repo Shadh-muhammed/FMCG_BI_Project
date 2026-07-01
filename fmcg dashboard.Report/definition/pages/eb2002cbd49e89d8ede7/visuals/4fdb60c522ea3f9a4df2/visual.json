@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "4fdb60c522ea3f9a4df2",
+  "position": {
+    "x": 930.575591115357,
+    "y": 0,
+    "z": 6,
+    "height": 284.91999044662049,
+    "width": 349.730117028899,
+    "tabOrder": 6
+  },
+  "visual": {
+    "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+    "query": {
+      "queryState": {
+        "content": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Momentum Table Card"
+                }
+              },
+              "queryRef": "_Measures.Momentum Table Card",
+              "nativeQueryRef": "Momentum Table Card"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

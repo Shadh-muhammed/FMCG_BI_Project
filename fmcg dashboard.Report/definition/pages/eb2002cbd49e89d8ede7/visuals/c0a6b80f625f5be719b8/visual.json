@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "c0a6b80f625f5be719b8",
+  "position": {
+    "x": 931,
+    "y": 340,
+    "z": 7,
+    "height": 150,
+    "width": 349,
+    "tabOrder": 7
+  },
+  "visual": {
+    "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+    "query": {
+      "queryState": {
+        "content": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "KPI Card Promo ROI"
+                }
+              },
+              "queryRef": "_Measures.KPI Card Promo ROI",
+              "nativeQueryRef": "KPI Card Promo ROI"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}
